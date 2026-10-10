@@ -164,3 +164,17 @@ C: Toplayıcı migration'ı uyguluyor. API sadece okuyor, yani yanlışlıkla ş
 
 **S: Ekranda `ortalama − normal` ile `anomali` bazen 0,1 farklı çıkabilir, neden?**
 C: Üçünü ayrı ayrı bir ondalığa yuvarlıyorum. Hesap tam hassasiyetle yapılıyor, sadece gösterilen değer yuvarlanıyor.
+
+## Aşama 4: harita verisi
+
+**S: Sınır verisini nereden aldın, lisansı ne?**
+C: Natural Earth. Kamu malı, atıf zorunlu değil, ama arayüzde yine de belirtiyorum. İlk denediğim küçük sürümde Türkiye illeri yoktu, ayrıntılı (10m) sürümü indirmem gerekti.
+
+**S: Veriyi doğrulamadan kullandın mı?**
+C: Hayır. Natural Earth'teki il adlarında yazım hataları var ve Türkçe karakter yok. Adlara güvenmek yerine, kendi şehir listemdeki koordinatın hangi ilin poligonunun içine düştüğüne baktım. 81 ilin 81'i eşleşti; iki kaynağın birbirini doğrulaması oldu. Kıyıdaki iki koordinatın (Tekirdağ, Girne) poligonun birkaç km dışında kaldığını ölçerek gördüm ve belgeledim.
+
+**S: KKTC'nin ilçe sınırları neden haritada yok?**
+C: Veri kaynağı KKTC'yi tek poligon olarak veriyor. Sahte sınır uydurmak yerine KKTC'yi tek bölge çizip 6 ilçeyi yan panelde gösteriyorum.
+
+**S: 40 MB'lık dosyayı neden repoya koymadın?**
+C: Büyük ve içinde dünyanın geri kalanı var. Bir betikle sadece Türkiye + KKTC'yi ayıklayıp basitleştirdim (109 KB). Betik repoda, çıktı tekrar üretilebilir.
