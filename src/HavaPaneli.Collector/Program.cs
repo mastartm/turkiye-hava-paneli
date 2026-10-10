@@ -41,6 +41,64 @@ HttpClient NewClient(string baseAddress)
     return http;
 }
 
+string? ArgValue(string name)
+{
+    var i = Array.IndexOf(args, name);
+    return i >= 0 && i + 1 < args.Length ? args[i + 1] : null;
+}
+
+// --export-normals <dosya> / --import-normals <dosya>: normalleri dosyaya aktarır / dosyadan yükler.
+// 30 yıllık veri Open-Meteo'nun ağırlık limitine takıldığı için hesaplanmış normaller repoda tutulur
+// (data/climate-normals.json); yeni kurulumda API'ye hiç gitmeden yüklenir (docs/ARCHITECTURE.md K-025).
+var seed = new ClimateNormalSeedService(CityCatalog.All, new EfClimateNormalStore(dbFactory));
+
+if (args.Contains("--export-normals"))
+{
+    var path = ArgValue("--export-normals");
+    if (path is null) { Console.Error.WriteLine("HATA: --export-normals bir dosya yolu ister."); return 2; }
+
+    var exported = await seed.ExportAsync(cts.Token);
+    var missing = CityCatalog.All.Count - exported.Count;
+    if (missing > 0)
+    {
+        // Eksik normalli dosya yazmak, sonradan yüklenince sessizce eksik veri üretirdi: yazmayı reddet.
+        Console.Error.WriteLine($"HATA: {missing} şehrin normali veritabanında yok; önce --normals ile tamamlayın. Dosya yazılmadı.");
+        return 1;
+    }
+
+    // Önce geçici dosyaya yaz, sonra yerine taşı: yazma yarıda kesilirse eski dosya bozulmaz.
+    var tmp = path + ".tmp";
+    await using (var fs = File.Create(tmp)) ClimateNormalFile.Write(fs, exported);
+    File.Move(tmp, path, overwrite: true);
+    Console.WriteLine($"{exported.Count} şehrin normali yazıldı: {path} ({new FileInfo(path).Length / 1024} KB)");
+    return 0;
+}
+
+if (args.Contains("--import-normals"))
+{
+    var path = ArgValue("--import-normals");
+    if (path is null) { Console.Error.WriteLine("HATA: --import-normals bir dosya yolu ister."); return 2; }
+    if (!File.Exists(path)) { Console.Error.WriteLine($"HATA: dosya bulunamadı: {path}"); return 2; }
+
+    IReadOnlyDictionary<string, ClimateNormal> data;
+    try
+    {
+        await using var fs = File.OpenRead(path);
+        data = ClimateNormalFile.Read(fs);
+    }
+    catch (InvalidDataException ex)
+    {
+        Console.Error.WriteLine($"HATA: {ex.Message}");
+        return 2;
+    }
+
+    var importResult = await seed.ImportAsync(data, cts.Token);
+    Console.WriteLine($"Normal: {importResult.Imported} şehir yüklendi.");
+    foreach (var id in importResult.UnknownIds) Console.Error.WriteLine($"  UYARI: dosyadaki '{id}' katalogda yok, yok sayıldı.");
+    foreach (var name in importResult.MissingCities) Console.Error.WriteLine($"  HATA: {name} dosyada yok.");
+    return importResult.HasProblems ? 1 : 0;
+}
+
 // --normals: 1991-2020 iklim normallerini hesaplayıp saklar (tek seferlik iş; hesaplanmış şehirler atlanır).
 // --force ile hepsini yeniden hesaplar. Normal tahminler gibi sık değişmez, bu yüzden ayrı bir mod.
 if (args.Contains("--normals"))

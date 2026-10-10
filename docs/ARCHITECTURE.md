@@ -169,3 +169,15 @@ Her karar: **ne**, **neden**, **reddedilen alternatif**. Aşamalar ilerledikçe 
 
 ### K-021 ek notu (2026-10-10): API'nin yerel portu
 - API'nin `http` profili başta `launchSettings.json` şablonundaki rastgele porta (5129) bakıyordu; arayüzün Vite vekili (`vite.config.ts`) ise 5099'a gidiyordu. Kullanıcı kendi bilgisayarında çalıştırınca ikisi birbirini bulamadı (haritada "Veriler şu an alınamadı" görünecekti). Düzeltme: profilin portu 5099 yapıldı, `ASPNETCORE_URLS` ayarına gerek kalmadı. **Ders:** "benim makinemde çalışıyor" yetmez; yerel çalıştırma adımları temiz bir kullanıcıyla denenmeli (README'de adım adım yazılacak).
+
+## K-025: İklim normalleri repoda dosya olarak (`data/climate-normals.json`), dışa/içe aktarma modları
+- **Sorun:** 87 şehrin 30 yıllık verisi Open-Meteo'nun ağırlık limitine takılıyor (K-019): bir kurulum 8+ dakika sürer ve saatlik limit yüzünden bazen iki ayrı çalıştırma ister. Her yeni kurulumda (geliştirici, canlı ortam, projeyi indiren biri) bu yaşanırdı.
+- **Çözüm:** Normal değişmeyen bir veri. Bir kez hesaplanıp küçük bir dosya olarak repoya girer; yeni kurulum `--import-normals data/climate-normals.json` ile API'ye hiç gitmeden yükler. `--normals` (API'den hesapla) yedek olarak durur.
+- **Toplayıcı modları:** `--export-normals <dosya>` (veritabanı → dosya), `--import-normals <dosya>` (dosya → veritabanı), `--normals` (API → veritabanı).
+- **Dosya biçimi (`ClimateNormalFile`):** Sürümlü (`version: 1`), şehir başına tek satır (git farkı okunur), şehirler kimliğe göre sıralı (aynı veri → aynı dosya), değerler 0,01 °C'ye yuvarlı (~200 KB). Anahtar şehir **slug**'ı (ASCII, sabit), ad değil. `InvariantCulture` ile yazılır/okunur, `-0` normalize edilir.
+- **Doğrulama:** Okuma sürümü, 366 değeri, sayı olduğunu ve NaN olmadığını denetler; geçersiz dosya anlaşılır `InvalidDataException` verir, yarım veri yüklenmez.
+- **Güvenli dışa aktarma:** Veritabanında eksik normalli şehir varsa dosya **yazılmaz** (eksik dosya sonradan sessizce eksik veri üretirdi). Yazma geçici dosyaya yapılıp taşınır: yarıda kesilirse eski dosya bozulmaz.
+- **İçe aktarma:** Mevcut normalin üzerine yazar (tekrar çalıştırmak zararsız). Katalogda olup dosyada olmayan şehir hata (çıkış kodu 1), dosyada olup katalogda olmayan kimlik uyarı.
+- **Test:** Sahte depoyla servis testleri; gerçek PostgreSQL'le "veritabanı A → dosya → boş veritabanı B" uçtan uca testi.
+- **Yuvarlama bedeli:** 0,01 °C sapma; anomali tek ondalıkla gösterildiği için görünmez.
+- **Lisans:** Dosya Open-Meteo/ERA5-Land verisinden türetilmiştir (CC BY 4.0); dosya başlığındaki `source` alanı ve arayüz atfı bunu belirtir.
