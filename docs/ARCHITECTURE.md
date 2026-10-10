@@ -78,3 +78,16 @@ Her karar: **ne**, **neden**, **reddedilen alternatif**. Aşamalar ilerledikçe 
 - `Npgsql.EntityFrameworkCore.PostgreSQL` 8.0.11: EF Core'un PostgreSQL sürücüsü. Sürüm .NET 8 ile uyumlu olsun diye 8.0.x'e sabitlendi (makinede .NET 10 SDK var, varsayılan olarak 10.x paket gelirdi).
 - `Microsoft.EntityFrameworkCore.Design` 8.0.11 + yerel `dotnet-ef` aracı (`dotnet-tools.json`): migration üretmek için. Genel (global) kurulum yerine repoya özel kurulum: herkes aynı sürümü kullanır.
 - `Testcontainers.PostgreSql`: testte geçici gerçek PostgreSQL açar. **Alternatif:** EF InMemory/SQLite. Reddedildi çünkü upsert, tarih tipleri ve migration PostgreSQL'de farklı davranabilir; sahte veritabanı bu hataları gizler. **Bedel:** testler Docker ister ve ilk çalışmada imaj indirir (~yirmi-otuz sn).
+
+## K-015: Toplayıcı ayrı konsol programı ("çalış ve bitir"), zamanlama GitHub Actions'ta
+- **Neden:** K-005'teki sorun: Render ücretsiz katmanı 15 dk sessizlikte API'yi uyutur, API içindeki `BackgroundService` de durur. Toplayıcı API'den bağımsız bir program olursa, zamanlanmış bir iş (GitHub Actions, public repoda ücretsiz olmalı) onu saatte bir çalıştırır; API uyusa da veri akar.
+- **Alternatif:** API içinde `BackgroundService`. Daha basit, ama ücretsiz barındırmada güvenilmez. Reddedildi.
+- **Çıkış kodları:** 0 tamam, 1 kısmi hata (veri yine de yazıldı), 2 yapılandırma hatası. Zamanlanmış işte hata görünür olur.
+- **Güvenlik:** Bağlantı dizesi yalnızca `ConnectionStrings__Default` ortam değişkeninden okunur ve hiçbir zaman yazdırılmaz.
+- **Şema sahibi:** Toplayıcı açılışta migration'ları uygular. API gelince şema sorumluluğunu yeniden değerlendiririz.
+- **Henüz yapılmadı:** GitHub Actions zamanlaması ve canlı veritabanı (Neon) aşama 6'da; hesap açma adımları kullanıcıya ait.
+
+## K-016: Yerel veritabanı Docker Compose ile, parola `.env`'den
+- `docker-compose.yml` sadece `db` servisi. Parola `${POSTGRES_PASSWORD:?...}` ile zorunlu: tanımlı değilse compose hata verir, boş/varsayılan parolayla çalışmaz. Port yalnızca `127.0.0.1`'e açılır.
+- **Doğrulandı (2026-10-10):** Geçici konteynerde gerçek uçtan uca deneme: 87/87 şehir, 609 tahmin satırı (87×7 gün), 8 deprem; ikinci çalıştırmada sayılar aynı kaldı (upsert çalışıyor). Ankara'nın bugünkü değeri (7,7 / 24,1 °C) başta `curl` ile alınan yanıtla birebir eşleşti.
+- **Bilinen kozmetik tutarsızlık:** Tablo adları küçük harf (`cities`), sütun adları EF varsayılanıyla BüyükHarf (`"Name"`). Çalışmayı etkilemiyor; elle SQL yazarken sütunları tırnak içinde yazmak gerekir. İstenirse snake_case adlandırma paketiyle düzeltilebilir (yeni bağımlılık olduğu için şimdilik yapılmadı).

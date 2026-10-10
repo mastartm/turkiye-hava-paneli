@@ -84,3 +84,17 @@ C: Uzun yaşayan bir context yüzlerce kaydı bellekte izleyip yavaşlar, hata s
 
 **S: USGS aynı depremi sonradan değiştirirse?**
 C: Kimliğe göre güncelliyorum. İlk çekimde "automatic" olan büyüklük sonradan "reviewed" olunca değişebilir.
+
+## Aşama 2: toplayıcı
+
+**S: Neden API içinde arka plan servisi değil de ayrı program?**
+C: Ücretsiz barındırma API'yi boştayken uyutuyor, içindeki arka plan servisi de duruyor. Toplayıcıyı ayrı bir "çalış ve bitir" programı yapıp zamanlanmış bir işle (GitHub Actions) çağırınca API uyusa bile veri akıyor.
+
+**S: Toplayıcı hata verirse nasıl anlaşılır?**
+C: Çıkış koduyla. 0 tamam, 1 kısmi hata, 2 yapılandırma hatası. Zamanlanmış iş bu kodu görüp kırmızıya döner.
+
+**S: Veriyi iki kez çekersen ne olur?**
+C: Çoğalmaz, upsert yapıyorum. Gerçek veritabanında iki kez çalıştırıp satır sayılarının aynı kaldığını doğruladım (87 şehir, 609 tahmin, 8 deprem).
+
+**S: Bağlantı dizesi nerede duruyor?**
+C: Sadece ortam değişkeninde. Repoda yok, loglarda da yazdırılmıyor.
