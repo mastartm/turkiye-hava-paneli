@@ -34,3 +34,11 @@ C: Evet, ondalık ayraç. Türkçe kültürde 39,93 yazılır, API 39.93 bekler.
 
 **S: Neden `double?` (nullable)?**
 C: Kaynak bazı günler veri vermeyebilir. Null'u 0'a çevirseydim yanlış sıcaklık göstermiş olurdum.
+
+## Aşama 2: şehir listesi
+
+**S: 81 ili neden veritabanına değil koda koydun?**
+C: Değişmeyen referans veri. Tablo migration ve okuma kodu getirirdi, faydası olmazdı. Liste değişkense ya da kullanıcı ekliyorsa tablo olurdu.
+
+**S: Koordinatların doğru olduğunu nasıl bildin?**
+C: İki katman. Testlerle sayı, benzersizlik ve ülke sınır kutusunu koruyorum. Ayrıca bir kerelik betikle Open-Meteo'nun konum servisine karşı kontrol ettim. İki sapma çıktı, ikisi de servisin il adını başka bir yere eşlemesinden kaynaklanıyordu, merkez ilçe adıyla doğrulandı.
