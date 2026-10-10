@@ -23,7 +23,8 @@ Her karar: **ne**, **neden**, **reddedilen alternatif**. Aşamalar ilerledikçe 
 - **Hava durumu:** Open-Meteo. Anahtarsız, ücretsiz, CC BY 4.0 (atıf zorunlu), ticari olmayan kullanım. Portföy projesi ticari olmadığı için uygun.
 - **Deprem:** USGS/EMSC (belgeli, resmi). AFAD için resmi kullanım şartı doğrulanana kadar kullanılmaz.
 - **Reddedilen:** MGM ve Kandilli. Resmi açık API yok, siteyi kazımak kırılgan ve izin belirsiz.
-- **Doğrulanacak:** Open-Meteo verisini kendi veritabanımızda saklamanın şartlara uygunluğu (aşama 1).
+- **Saklama kararı:** Open-Meteo lisans sayfası önbellek/saklamayı açıkça yazmıyor; CC BY 4.0 kopyalamaya izin veriyor. Bu yüzden veriyi saklıyoruz, ama her gösterimde Open-Meteo linki var ve ham veriyi toplu indirmeye açmıyoruz. Kesin hukuki teyit değil, makul yorum.
+- **USGS:** Resmi kullanım şartı sayfasını okumadım; sorgu parametreleri doğrulandı (koordinat kutusu, zaman, büyüklük, GeoJSON, en fazla 20.000 sonuç).
 
 ## K-005: Canlıya alma planı (kart istemeyen yol)
 - Veritabanı: Neon. API: Render (Docker). Arayüz: Cloudflare Pages. Güncel şartlar kayıttan önce kullanıcı tarafından kontrol edilir.
