@@ -91,3 +91,11 @@ Her karar: **ne**, **neden**, **reddedilen alternatif**. Aşamalar ilerledikçe 
 - `docker-compose.yml` sadece `db` servisi. Parola `${POSTGRES_PASSWORD:?...}` ile zorunlu: tanımlı değilse compose hata verir, boş/varsayılan parolayla çalışmaz. Port yalnızca `127.0.0.1`'e açılır.
 - **Doğrulandı (2026-10-10):** Geçici konteynerde gerçek uçtan uca deneme: 87/87 şehir, 609 tahmin satırı (87×7 gün), 8 deprem; ikinci çalıştırmada sayılar aynı kaldı (upsert çalışıyor). Ankara'nın bugünkü değeri (7,7 / 24,1 °C) başta `curl` ile alınan yanıtla birebir eşleşti.
 - **Bilinen kozmetik tutarsızlık:** Tablo adları küçük harf (`cities`), sütun adları EF varsayılanıyla BüyükHarf (`"Name"`). Çalışmayı etkilemiyor; elle SQL yazarken sütunları tırnak içinde yazmak gerekir. İstenirse snake_case adlandırma paketiyle düzeltilebilir (yeni bağımlılık olduğu için şimdilik yapılmadı).
+
+## K-017: İklim normali ve anomali (Domain'de saf hesap)
+- **Tanım:** Normal = 1991-2020 ortalama sıcaklığı, yılın her günü için. Anomali = gözlenen/tahmin edilen sıcaklık − o günün normali (pozitif = normalden sıcak). 1991-2020, Dünya Meteoroloji Örgütü'nün standart "iklim normali" dönemidir.
+- **±7 günlük pencere:** Tek bir takvim günü için 30 örnek gürültülü. Her günün iki yanındaki 7 günü de ortalamaya katıyoruz (~450 örnek). Bedel: ani mevsim geçişleri biraz yumuşar; normal için kabul edilebilir.
+- **366 konum, artık yıla göre indeks:** Gün numarasını her zaman artık yıl olan 2000'e göre alırız; 1 Mart her yıl aynı konumda, 29 Şubat'ın kendi yeri var.
+- **Dairesel pencere:** Yıl sonu ile yıl başı komşu (3 Ocak'ın penceresi Aralık sonunu da içerir). Testle korunuyor.
+- **Null günler ortalamaya katılmaz.** Yetersiz veri varsa sessizce yanlış değer üretmek yerine anlaşılır hata verir.
+- **Alternatif:** Her gün için tek takvim günü ortalaması (pencere yok): daha gürültülü. Ya da kayan 31 günlük ortalama: gerçeğe daha az sadık.

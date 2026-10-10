@@ -98,3 +98,20 @@ C: Çoğalmaz, upsert yapıyorum. Gerçek veritabanında iki kez çalıştırıp
 
 **S: Bağlantı dizesi nerede duruyor?**
 C: Sadece ortam değişkeninde. Repoda yok, loglarda da yazdırılmıyor.
+
+## Aşama 3: iklim normali ve anomali
+
+**S: "Normalden sıcak" ne demek, nasıl hesapladın?**
+C: 1991-2020 dönemindeki ortalamayı yılın her günü için çıkardım. Bugünün sıcaklığından o günün normalini çıkarınca anomali elde ediyorum. Pozitifse normalden sıcak.
+
+**S: Neden 1991-2020?**
+C: Dünya Meteoroloji Örgütü'nün iklim normali için kullandığı standart 30 yıllık dönem.
+
+**S: Tek bir günün 30 yıllık ortalaması yeterli değil mi?**
+C: Sadece 30 örnek olur, gürültülü çıkar. Her günün iki yanındaki 7 günü de katıyorum, ~450 örnek oluyor.
+
+**S: 29 Şubat'ı nasıl yönettin?**
+C: Gün numarasını her zaman artık yıl olan 2000'e göre hesaplıyorum. Böylece 1 Mart her yıl aynı konumda, 29 Şubat'ın da kendi yeri var.
+
+**S: Veri eksikse?**
+C: Null günleri ortalamaya katmıyorum (0 sayarsam ortalama bozulur). Hiç veri yoksa hata veriyorum, sessizce yanlış değer üretmiyorum.
