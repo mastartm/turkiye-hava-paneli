@@ -15,6 +15,9 @@ public interface IClimateNormalStore
 
     /// <returns>Şehrin normali; hiç hesaplanmadıysa null.</returns>
     Task<ClimateNormal?> GetAsync(string cityName, CancellationToken cancellationToken = default);
+
+    /// <summary>Normali hesaplanmış tüm şehirler (anahtar: şehir adı). Harita özeti için tek sorguda alınır.</summary>
+    Task<IReadOnlyDictionary<string, ClimateNormal>> GetAllAsync(CancellationToken cancellationToken = default);
 }
 
 public sealed record NormalsResult(int Computed, int Skipped, IReadOnlyList<string> Failed)

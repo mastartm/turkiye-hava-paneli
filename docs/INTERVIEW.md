@@ -124,3 +124,20 @@ C: 1991-2020 verisi değişmez. Bir kez hesaplayıp saklıyorum, saatlik toplama
 
 **S: Normali neden dizi olarak, tek satırda sakladın?**
 C: 366 değer her zaman birlikte okunuyor ve yazılıyor. PostgreSQL dizi tipini destekliyor, böylece tek sorguyla alıyorum; 366 ayrı satır gereksiz karmaşıklık olurdu.
+
+## Aşama 3: sorgu servisleri
+
+**S: Neden okuma ve yazma için ayrı arayüzler?**
+C: Yazma toplayıcının, okuma API'nin işi. Ayırınca API yanlışlıkla veri yazamaz ve her taraf sadece ihtiyacı olan yüzeyi görür. Okuyucularda `AsNoTracking` kullanıyorum, çünkü veri sadece gösterilecek.
+
+**S: URL'de neden "slug"?**
+C: `/cities/İstanbul` Türkçe karakter yüzünden tarayıcıda kodlanır ve elle yazılınca sorun çıkarır. ASCII, küçük harfli kimlik (`istanbul`) güvenli ve tahmin edilebilir. Gelen değeri de aynı fonksiyondan geçiriyorum, `İSTANBUL` yazılsa da çalışır.
+
+**S: `ToLower()` yerine neden Türkçe harfleri tek tek eşledin?**
+C: `ToLower` kültüre göre farklı davranır. Türk kültüründe `I` küçük `ı` olur, `i` değil. Bu, "Isparta" gibi şehirlerde bile hata üretir. Açık eşleme her makinede aynı sonucu verir; testte `tr-TR` kültürüyle de deniyorum.
+
+**S: "Bugün"ü hangi saat dilimine göre hesaplıyorsun?**
+C: Sabit UTC+3. Türkiye yaz saati uygulamıyor, böylece Windows ve Linux'ta saat dilimi adı farkından etkilenmiyorum. Gece 00-03 arası UTC'ye göre hâlâ dünmüş gibi görünürdü, bunu testle koruyorum. KKTC yaz saatinde bir saatlik fark bilinen bir sınır.
+
+**S: Veri yoksa API ne döner?**
+C: Şehir yoksa 404. Şehir var ama verisi yoksa boş liste ve boş değerler; sıfır göstermem, çünkü "veri yok" ile "0 derece" farklı şeyler.

@@ -116,3 +116,12 @@ Her karar: **ne**, **neden**, **reddedilen alternatif**. Aşamalar ilerledikçe 
 - **Pratik sonuç:** İlk kurulumda normal hesabı bir saat arayla iki kez çalıştırılır. Komut tekrarlanabilir (saklı şehirler atlanır), yani aynı komut kaldığı yerden devam eder. Normal bir kez hesaplandıktan sonra bir daha gerekmez.
 - **Doğrulama:** Saklanan değerler iklimsel olarak makul: Ankara 14 Ocak ≈ 1,0 °C, 14 Temmuz ≈ 24,2 °C; Erzurum 14 Ocak ≈ −7,6 °C; Antalya 14 Temmuz ≈ 28,6 °C. Dizi uzunluğu hepsinde 366.
 - **Henüz doğrulanmayan:** Kalan 15 şehrin (KKTC dahil) normali gerçek veriyle hesaplanmadı; sınır kontrolü saatlik limit sıfırlanınca yapılacak.
+
+## K-020: Sorgu servisleri Application'da, okuma/yazma arayüzleri ayrı
+- **Neden:** Yazma (`IWeatherStore`, `IEarthquakeStore`) toplayıcının işi; okuma (`IForecastReader`, `IEarthquakeReader`) API'nin işi. Arayüzleri ayırmak, API'nin yanlışlıkla veri yazamamasını sağlar ve her tarafın ihtiyacı kadar yüzey bırakır. Okuyucular `AsNoTracking` kullanır (veri sadece gösterilecek, izleme gereksiz).
+- **Servisler:** `ForecastQueryService` (şehir tahmini + anomali, harita özeti), `EarthquakeQueryService` (parametre doğrulama + sorgu). Controller'lar sadece bunları çağırır.
+- **Anomali tahminler için de hesaplanır:** `anomali = ortalama sıcaklık − o günün normali`. Normal ya da ortalama yoksa anomali `null` (0 değil): "veri yok" ile "normal" karışmasın.
+- **Şehir kimliği (slug):** `City.Slug`, ASCII ve küçük harf (`istanbul`). Arama `City.ToSlug` ile normalleştirilir, yani `İstanbul`, `ISTANBUL`, `istanbul` aynı şehre gider. Türkçe harfleri açıkça eşliyoruz; `ToLower` kültüre göre farklı davranır (İ/I/ı) ve güvenilmez.
+- **"Bugün" = Türkiye saati (sabit UTC+3):** Türkiye 2016'dan beri yaz saati uygulamıyor. Sabit ofset, işletim sistemine göre değişen saat dilimi adlarına (Windows `Turkey Standard Time`, Linux `Europe/Istanbul`) bağımlı olmaz. Test: 22:30 UTC, Türkiye'de ertesi güne düşer. **Bilinen sınır:** KKTC yaz saati uyguladığı için yazın bir saatlik fark olabilir.
+- **Harita özeti verisiz şehri de listeler** (boş değerlerle): arayüz "veri yok" gösterebilsin, nokta kaybolmasın.
+- **Deprem sorgusu sınırları:** 1-30 gün, büyüklük 0-10, en fazla 500 sonuç. Sınırsız sorgu veritabanını yorabilir.

@@ -42,6 +42,9 @@ public class ClimateNormalServiceTests
 
         public Task<ClimateNormal?> GetAsync(string cityName, CancellationToken ct = default) =>
             Task.FromResult(Data.GetValueOrDefault(cityName));
+
+        public Task<IReadOnlyDictionary<string, ClimateNormal>> GetAllAsync(CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyDictionary<string, ClimateNormal>>(Data);
     }
 
     private static ClimateNormalService Create(IReadOnlyList<City> cities, FakeClimate c, FakeStore s) =>

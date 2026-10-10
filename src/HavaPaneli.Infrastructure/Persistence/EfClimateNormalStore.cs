@@ -33,6 +33,17 @@ public sealed class EfClimateNormalStore(IDbContextFactory<AppDbContext> factory
 
         return values is null ? null : new ClimateNormal(values);
     }
+
+    public async Task<IReadOnlyDictionary<string, ClimateNormal>> GetAllAsync(CancellationToken ct = default)
+    {
+        await using var db = await factory.CreateDbContextAsync(ct);
+
+        var rows = await db.ClimateNormals.AsNoTracking()
+            .Join(db.Cities, n => n.CityId, c => c.Id, (n, c) => new { c.Name, n.DailyMeansC })
+            .ToListAsync(ct);
+
+        return rows.ToDictionary(x => x.Name, x => new ClimateNormal(x.DailyMeansC));
+    }
 }
 
 /// <summary>Şehri adından bulur, yoksa oluşturur; koordinatı güncel tutar. Birden fazla saklama sınıfı kullanır.</summary>
