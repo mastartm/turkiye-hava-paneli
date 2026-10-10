@@ -1,0 +1,30 @@
+# Gizli bilgiler
+.env
+.env.*
+!.env.example
+secrets.json
+appsettings.Development.json
+*.pfx
+*.pem
+*.key
+
+# .NET
+bin/
+obj/
+*.user
+.vs/
+TestResults/
+
+# Node / frontend
+node_modules/
+web/dist/
+web/coverage/
+
+# IDE / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+
+# Claude Code yerel ayarları
+.claude/settings.local.json
