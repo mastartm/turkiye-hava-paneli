@@ -15,16 +15,7 @@ public sealed class EfWeatherStore(IDbContextFactory<AppDbContext> factory) : IW
     {
         await using var db = await factory.CreateDbContextAsync(ct);
 
-        var cityRow = await db.Cities.SingleOrDefaultAsync(c => c.Name == city.Name, ct);
-        if (cityRow is null)
-        {
-            cityRow = new CityRow { Name = city.Name };
-            db.Cities.Add(cityRow);
-        }
-        cityRow.Country = city.Country.ToString();
-        cityRow.Latitude = city.Latitude;
-        cityRow.Longitude = city.Longitude;
-        await db.SaveChangesAsync(ct); // Yeni şehrin Id'sinin oluşması için önce kaydet.
+        var cityRow = await CityRows.GetOrCreateAsync(db, city, ct);
 
         var dates = forecasts.Select(f => f.Date).ToList();
         var existing = await db.Forecasts

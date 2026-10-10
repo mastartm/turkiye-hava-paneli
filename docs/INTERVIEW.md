@@ -115,3 +115,12 @@ C: Gün numarasını her zaman artık yıl olan 2000'e göre hesaplıyorum. Böy
 
 **S: Veri eksikse?**
 C: Null günleri ortalamaya katmıyorum (0 sayarsam ortalama bozulur). Hiç veri yoksa hata veriyorum, sessizce yanlış değer üretmiyorum.
+
+**S: Gerçek API'ye çıkınca karşılaştığın bir sorun oldu mu?**
+C: Evet. 87 şehrin 30 yıllık verisini çekerken 16'dan sonra 429 aldım. Open-Meteo limiti istek sayısına değil ağırlığına bakıyor, 30 yıllık sorgu ağır sayılıyor. Sahte HTTP'li testlerim bunu göstermezdi, gerçek çalıştırmada yakaladım. Çözüm: "dakikalık limit" mesajında bekleyip yeniden deneyen bir HTTP işleyicisi; saatlik/günlük limitte beklemiyor, hatayı gösteriyor.
+
+**S: İklim normalini neden ayrı mod olarak çalıştırıyorsun?**
+C: 1991-2020 verisi değişmez. Bir kez hesaplayıp saklıyorum, saatlik toplamada tekrar çekmiyorum. Hesaplanmış şehirler atlanıyor; istersem `--force` ile yeniden hesaplarım.
+
+**S: Normali neden dizi olarak, tek satırda sakladın?**
+C: 366 değer her zaman birlikte okunuyor ve yazılıyor. PostgreSQL dizi tipini destekliyor, böylece tek sorguyla alıyorum; 366 ayrı satır gereksiz karmaşıklık olurdu.

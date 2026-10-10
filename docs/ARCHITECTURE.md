@@ -99,3 +99,20 @@ Her karar: **ne**, **neden**, **reddedilen alternatif**. Aşamalar ilerledikçe 
 - **Dairesel pencere:** Yıl sonu ile yıl başı komşu (3 Ocak'ın penceresi Aralık sonunu da içerir). Testle korunuyor.
 - **Null günler ortalamaya katılmaz.** Yetersiz veri varsa sessizce yanlış değer üretmek yerine anlaşılır hata verir.
 - **Alternatif:** Her gün için tek takvim günü ortalaması (pencere yok): daha gürültülü. Ya da kayan 31 günlük ortalama: gerçeğe daha az sadık.
+
+## K-018: İklim normali hesabı ayrı mod (`--normals`), bir kez hesaplanır
+- **Neden:** Normal 1991-2020 verisine dayanır, değişmez. Her saatlik toplamada yeniden çekmek anlamsız ve pahalı. Bu yüzden toplayıcının ayrı bir modu: `--normals` (hesaplanmış şehirleri atlar), `--force` (hepsini yeniden hesaplar).
+- **Saklama:** Şehir başına tek satır, `climate_normals.DailyMeansC` bir PostgreSQL `double precision[]` dizisi (366 değer). 366 ayrı satır yerine: her zaman birlikte okunur/yazılır, tek sorgu yeter.
+- **Model açıkça seçildi:** `models=era5_land`. Varsayılan "best_match" zamanla değişebilir; normal tekrarlanabilir olmalı. ERA5-Land ~11 km çözünürlük.
+
+## K-019: 429 (dakikalık limit) için bekleyip yeniden deneme (`RateLimitRetryHandler`)
+- **Sorun (gerçek denemede bulundu):** Open-Meteo limiti istek sayısına değil istek **ağırlığına** bakıyor. 30 yıllık günlük veri istemek ağır sayılıyor: ilk çalıştırmada 16 şehirden sonra "Minutely API request limit exceeded" geldi ve kalan şehirlerin hepsi hemen 429 aldı. Sahte HTTP ile yazılan testler bunu gösteremezdi.
+- **Çözüm:** `DelegatingHandler`. 429 gövdesinde "Minutely" geçiyorsa 65 sn bekleyip yeniden dener (en fazla 4 kez). Saatlik/günlük limitte beklemenin faydası yok, yanıt olduğu gibi döner ve çağıran hata görür.
+- **Test edilebilirlik:** Bekleme fonksiyonu enjekte edilir; testte gerçekten beklemeden süre kaydedilir.
+- **Bilinen sınır:** Yanıt gövdesindeki "Minutely" metnine bakıyoruz; Open-Meteo mesajı değiştirirse yeniden deneme devreye girmez (hata görünür olur, sessizce yanlış çalışmaz).
+
+### K-019 sonuç notu (2026-10-10, gerçek çalıştırma)
+- Yeniden deneme işleyicisiyle `--normals` çalıştırıldı: 8 dk 20 sn'de toplam 72/87 şehrin normali saklandı (ilk denemede 16, ikincide 56 daha). Kalan 15 şehirde **saatlik** limit aşıldı ("Hourly API request limit exceeded"); işleyici bilerek beklemedi ve şehirleri hata olarak raporladı. Çıkış kodu 1.
+- **Pratik sonuç:** İlk kurulumda normal hesabı bir saat arayla iki kez çalıştırılır. Komut tekrarlanabilir (saklı şehirler atlanır), yani aynı komut kaldığı yerden devam eder. Normal bir kez hesaplandıktan sonra bir daha gerekmez.
+- **Doğrulama:** Saklanan değerler iklimsel olarak makul: Ankara 14 Ocak ≈ 1,0 °C, 14 Temmuz ≈ 24,2 °C; Erzurum 14 Ocak ≈ −7,6 °C; Antalya 14 Temmuz ≈ 28,6 °C. Dizi uzunluğu hepsinde 366.
+- **Henüz doğrulanmayan:** Kalan 15 şehrin (KKTC dahil) normali gerçek veriyle hesaplanmadı; sınır kontrolü saatlik limit sıfırlanınca yapılacak.
