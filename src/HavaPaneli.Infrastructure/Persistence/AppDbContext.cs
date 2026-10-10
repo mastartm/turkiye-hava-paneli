@@ -35,8 +35,16 @@ public sealed class EarthquakeRow
     public double? DepthKm { get; set; }
 }
 
+/// <summary>Şehrin 366 günlük iklim normali, tek satırda PostgreSQL dizisi olarak. Her zaman birlikte okunur/yazılır.</summary>
+public sealed class ClimateNormalRow
+{
+    public int CityId { get; set; }
+    public double[] DailyMeansC { get; set; } = [];
+}
+
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
+    public DbSet<ClimateNormalRow> ClimateNormals => Set<ClimateNormalRow>();
     public DbSet<CityRow> Cities => Set<CityRow>();
     public DbSet<ForecastRow> Forecasts => Set<ForecastRow>();
     public DbSet<EarthquakeRow> Earthquakes => Set<EarthquakeRow>();
@@ -57,6 +65,13 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             e.ToTable("daily_forecasts");
             // Bileşik anahtar: bir şehrin bir günü için tek tahmin. Yenisi gelince üzerine yazılır.
             e.HasKey(x => new { x.CityId, x.Date });
+            e.HasOne<CityRow>().WithMany().HasForeignKey(x => x.CityId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<ClimateNormalRow>(e =>
+        {
+            e.ToTable("climate_normals");
+            e.HasKey(x => x.CityId); // şehir başına tek satır
             e.HasOne<CityRow>().WithMany().HasForeignKey(x => x.CityId).OnDelete(DeleteBehavior.Cascade);
         });
 

@@ -46,6 +46,41 @@ public class CityCatalogTests
     }
 
     [Fact]
+    public void Slug_Kimlikleri_Benzersiz_Ve_Sadece_ASCII_Kucuk_Harf()
+    {
+        var slugs = CityCatalog.All.Select(c => c.Slug).ToList();
+
+        Assert.Equal(slugs.Count, slugs.Distinct().Count());
+        Assert.All(slugs, s => Assert.Matches("^[a-z0-9-]+$", s));
+    }
+
+    [Theory]
+    [InlineData("İstanbul", "istanbul")]
+    [InlineData("Iğdır", "igdir")]
+    [InlineData("Şanlıurfa", "sanliurfa")]
+    [InlineData("Hakkâri", "hakkari")]
+    [InlineData("Güzelyurt", "guzelyurt")]
+    [InlineData("Çanakkale", "canakkale")]
+    [InlineData("Kahramanmaraş", "kahramanmaras")]
+    public void Slug_Turkce_Karakterleri_ASCII_Yapar(string name, string expected)
+    {
+        Assert.Equal(expected, new City(name, Country.Turkiye, 39, 35).Slug);
+    }
+
+    [Fact]
+    public void Slug_Kultur_Bagimsiz_Calisir()
+    {
+        var old = System.Globalization.CultureInfo.CurrentCulture;
+        System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("tr-TR");
+        try
+        {
+            Assert.Equal("istanbul", new City("İstanbul", Country.Turkiye, 41, 29).Slug);
+            Assert.Equal("isparta", new City("Isparta", Country.Turkiye, 37.76, 30.55).Slug);
+        }
+        finally { System.Globalization.CultureInfo.CurrentCulture = old; }
+    }
+
+    [Fact]
     public void Turkce_Karakterler_Korunur()
     {
         var names = CityCatalog.All.Select(c => c.Name).ToHashSet();

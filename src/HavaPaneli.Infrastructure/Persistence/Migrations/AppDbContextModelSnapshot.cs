@@ -54,6 +54,20 @@ namespace HavaPaneli.Infrastructure.Persistence.Migrations
                     b.ToTable("cities", (string)null);
                 });
 
+            modelBuilder.Entity("HavaPaneli.Infrastructure.Persistence.ClimateNormalRow", b =>
+                {
+                    b.Property<int>("CityId")
+                        .HasColumnType("integer");
+
+                    b.Property<double[]>("DailyMeansC")
+                        .IsRequired()
+                        .HasColumnType("double precision[]");
+
+                    b.HasKey("CityId");
+
+                    b.ToTable("climate_normals", (string)null);
+                });
+
             modelBuilder.Entity("HavaPaneli.Infrastructure.Persistence.EarthquakeRow", b =>
                 {
                     b.Property<string>("Id")
@@ -116,6 +130,15 @@ namespace HavaPaneli.Infrastructure.Persistence.Migrations
                     b.HasKey("CityId", "Date");
 
                     b.ToTable("daily_forecasts", (string)null);
+                });
+
+            modelBuilder.Entity("HavaPaneli.Infrastructure.Persistence.ClimateNormalRow", b =>
+                {
+                    b.HasOne("HavaPaneli.Infrastructure.Persistence.CityRow", null)
+                        .WithMany()
+                        .HasForeignKey("CityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("HavaPaneli.Infrastructure.Persistence.ForecastRow", b =>

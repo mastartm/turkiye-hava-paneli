@@ -17,6 +17,36 @@ public sealed record City
     public double Latitude { get; }
     public double Longitude { get; }
 
+    /// <summary>
+    /// URL'de kullanılan kimlik: küçük harf, ASCII ("İstanbul" → "istanbul", "Şanlıurfa" → "sanliurfa").
+    /// Türkçe karakterli adresler tarayıcıda ve elle yazarken sorun çıkarır; ASCII kimlik güvenli ve tahmin edilebilir.
+    /// </summary>
+    public string Slug => ToSlug(Name);
+
+    public static string ToSlug(string name)
+    {
+        var sb = new System.Text.StringBuilder(name.Length);
+        foreach (var ch in name.Trim())
+        {
+            // Büyük/küçük harf dönüşümüne güvenmiyoruz (İ/I/ı kültüre göre farklı çalışır): her Türkçe harfi açıkça eşleriz.
+            sb.Append(ch switch
+            {
+                'ç' or 'Ç' => 'c',
+                'ğ' or 'Ğ' => 'g',
+                'ı' or 'İ' or 'I' or 'i' => 'i',
+                'ö' or 'Ö' => 'o',
+                'ş' or 'Ş' => 's',
+                'ü' or 'Ü' => 'u',
+                'â' or 'Â' => 'a',
+                'î' or 'Î' => 'i',
+                'û' or 'Û' => 'u',
+                ' ' => '-',
+                _ => char.ToLowerInvariant(ch)
+            });
+        }
+        return sb.ToString();
+    }
+
     public City(string name, Country country, double latitude, double longitude)
     {
         if (string.IsNullOrWhiteSpace(name))

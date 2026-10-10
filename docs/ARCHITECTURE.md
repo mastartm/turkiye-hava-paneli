@@ -91,3 +91,50 @@ Her karar: **ne**, **neden**, **reddedilen alternatif**. Aşamalar ilerledikçe 
 - `docker-compose.yml` sadece `db` servisi. Parola `${POSTGRES_PASSWORD:?...}` ile zorunlu: tanımlı değilse compose hata verir, boş/varsayılan parolayla çalışmaz. Port yalnızca `127.0.0.1`'e açılır.
 - **Doğrulandı (2026-10-10):** Geçici konteynerde gerçek uçtan uca deneme: 87/87 şehir, 609 tahmin satırı (87×7 gün), 8 deprem; ikinci çalıştırmada sayılar aynı kaldı (upsert çalışıyor). Ankara'nın bugünkü değeri (7,7 / 24,1 °C) başta `curl` ile alınan yanıtla birebir eşleşti.
 - **Bilinen kozmetik tutarsızlık:** Tablo adları küçük harf (`cities`), sütun adları EF varsayılanıyla BüyükHarf (`"Name"`). Çalışmayı etkilemiyor; elle SQL yazarken sütunları tırnak içinde yazmak gerekir. İstenirse snake_case adlandırma paketiyle düzeltilebilir (yeni bağımlılık olduğu için şimdilik yapılmadı).
+
+## K-017: İklim normali ve anomali (Domain'de saf hesap)
+- **Tanım:** Normal = 1991-2020 ortalama sıcaklığı, yılın her günü için. Anomali = gözlenen/tahmin edilen sıcaklık − o günün normali (pozitif = normalden sıcak). 1991-2020, Dünya Meteoroloji Örgütü'nün standart "iklim normali" dönemidir.
+- **±7 günlük pencere:** Tek bir takvim günü için 30 örnek gürültülü. Her günün iki yanındaki 7 günü de ortalamaya katıyoruz (~450 örnek). Bedel: ani mevsim geçişleri biraz yumuşar; normal için kabul edilebilir.
+- **366 konum, artık yıla göre indeks:** Gün numarasını her zaman artık yıl olan 2000'e göre alırız; 1 Mart her yıl aynı konumda, 29 Şubat'ın kendi yeri var.
+- **Dairesel pencere:** Yıl sonu ile yıl başı komşu (3 Ocak'ın penceresi Aralık sonunu da içerir). Testle korunuyor.
+- **Null günler ortalamaya katılmaz.** Yetersiz veri varsa sessizce yanlış değer üretmek yerine anlaşılır hata verir.
+- **Alternatif:** Her gün için tek takvim günü ortalaması (pencere yok): daha gürültülü. Ya da kayan 31 günlük ortalama: gerçeğe daha az sadık.
+
+## K-018: İklim normali hesabı ayrı mod (`--normals`), bir kez hesaplanır
+- **Neden:** Normal 1991-2020 verisine dayanır, değişmez. Her saatlik toplamada yeniden çekmek anlamsız ve pahalı. Bu yüzden toplayıcının ayrı bir modu: `--normals` (hesaplanmış şehirleri atlar), `--force` (hepsini yeniden hesaplar).
+- **Saklama:** Şehir başına tek satır, `climate_normals.DailyMeansC` bir PostgreSQL `double precision[]` dizisi (366 değer). 366 ayrı satır yerine: her zaman birlikte okunur/yazılır, tek sorgu yeter.
+- **Model açıkça seçildi:** `models=era5_land`. Varsayılan "best_match" zamanla değişebilir; normal tekrarlanabilir olmalı. ERA5-Land ~11 km çözünürlük.
+
+## K-019: 429 (dakikalık limit) için bekleyip yeniden deneme (`RateLimitRetryHandler`)
+- **Sorun (gerçek denemede bulundu):** Open-Meteo limiti istek sayısına değil istek **ağırlığına** bakıyor. 30 yıllık günlük veri istemek ağır sayılıyor: ilk çalıştırmada 16 şehirden sonra "Minutely API request limit exceeded" geldi ve kalan şehirlerin hepsi hemen 429 aldı. Sahte HTTP ile yazılan testler bunu gösteremezdi.
+- **Çözüm:** `DelegatingHandler`. 429 gövdesinde "Minutely" geçiyorsa 65 sn bekleyip yeniden dener (en fazla 4 kez). Saatlik/günlük limitte beklemenin faydası yok, yanıt olduğu gibi döner ve çağıran hata görür.
+- **Test edilebilirlik:** Bekleme fonksiyonu enjekte edilir; testte gerçekten beklemeden süre kaydedilir.
+- **Bilinen sınır:** Yanıt gövdesindeki "Minutely" metnine bakıyoruz; Open-Meteo mesajı değiştirirse yeniden deneme devreye girmez (hata görünür olur, sessizce yanlış çalışmaz).
+
+### K-019 sonuç notu (2026-10-10, gerçek çalıştırma)
+- Yeniden deneme işleyicisiyle `--normals` çalıştırıldı: 8 dk 20 sn'de toplam 72/87 şehrin normali saklandı (ilk denemede 16, ikincide 56 daha). Kalan 15 şehirde **saatlik** limit aşıldı ("Hourly API request limit exceeded"); işleyici bilerek beklemedi ve şehirleri hata olarak raporladı. Çıkış kodu 1.
+- **Pratik sonuç:** İlk kurulumda normal hesabı bir saat arayla iki kez çalıştırılır. Komut tekrarlanabilir (saklı şehirler atlanır), yani aynı komut kaldığı yerden devam eder. Normal bir kez hesaplandıktan sonra bir daha gerekmez.
+- **Doğrulama:** Saklanan değerler iklimsel olarak makul: Ankara 14 Ocak ≈ 1,0 °C, 14 Temmuz ≈ 24,2 °C; Erzurum 14 Ocak ≈ −7,6 °C; Antalya 14 Temmuz ≈ 28,6 °C. Dizi uzunluğu hepsinde 366.
+- **Henüz doğrulanmayan:** Kalan 15 şehrin (KKTC dahil) normali gerçek veriyle hesaplanmadı; sınır kontrolü saatlik limit sıfırlanınca yapılacak.
+
+## K-020: Sorgu servisleri Application'da, okuma/yazma arayüzleri ayrı
+- **Neden:** Yazma (`IWeatherStore`, `IEarthquakeStore`) toplayıcının işi; okuma (`IForecastReader`, `IEarthquakeReader`) API'nin işi. Arayüzleri ayırmak, API'nin yanlışlıkla veri yazamamasını sağlar ve her tarafın ihtiyacı kadar yüzey bırakır. Okuyucular `AsNoTracking` kullanır (veri sadece gösterilecek, izleme gereksiz).
+- **Servisler:** `ForecastQueryService` (şehir tahmini + anomali, harita özeti), `EarthquakeQueryService` (parametre doğrulama + sorgu). Controller'lar sadece bunları çağırır.
+- **Anomali tahminler için de hesaplanır:** `anomali = ortalama sıcaklık − o günün normali`. Normal ya da ortalama yoksa anomali `null` (0 değil): "veri yok" ile "normal" karışmasın.
+- **Şehir kimliği (slug):** `City.Slug`, ASCII ve küçük harf (`istanbul`). Arama `City.ToSlug` ile normalleştirilir, yani `İstanbul`, `ISTANBUL`, `istanbul` aynı şehre gider. Türkçe harfleri açıkça eşliyoruz; `ToLower` kültüre göre farklı davranır (İ/I/ı) ve güvenilmez.
+- **"Bugün" = Türkiye saati (sabit UTC+3):** Türkiye 2016'dan beri yaz saati uygulamıyor. Sabit ofset, işletim sistemine göre değişen saat dilimi adlarına (Windows `Turkey Standard Time`, Linux `Europe/Istanbul`) bağımlı olmaz. Test: 22:30 UTC, Türkiye'de ertesi güne düşer. **Bilinen sınır:** KKTC yaz saati uyguladığı için yazın bir saatlik fark olabilir.
+- **Harita özeti verisiz şehri de listeler** (boş değerlerle): arayüz "veri yok" gösterebilsin, nokta kaybolmasın.
+- **Deprem sorgusu sınırları:** 1-30 gün, büyüklük 0-10, en fazla 500 sonuç. Sınırsız sorgu veritabanını yorabilir.
+
+## K-021: API: ASP.NET Core, ince controller'lar, DTO'lar
+- **Uçlar (hepsi GET):** `/health`, `/api/cities`, `/api/cities/{id}/forecast`, `/api/map`, `/api/earthquakes?days=&minMagnitude=`, `/api/sources`.
+- **Controller'lar ince:** Parametreyi alır, Application servisini çağırır, DTO'ya çevirir. İş mantığı yok.
+- **DTO'lar (`Dtos.cs`):** API'nin sözleşmesi. Domain sınıflarını doğrudan vermiyoruz; Domain değişince arayüzün beklediği JSON kazara bozulmasın.
+- **Çıktı yuvarlaması:** Sıcaklıklar tek ondalığa yuvarlanır (`16.1`), `16.174888888888887` değil. Hesap tam hassasiyetle yapılır, yalnızca dışarı verilen değer yuvarlanır. Bedel: `ortalama − normal` ile `anomali` ekranda 0,1 sapabilir (yuvarlama), bu gösterim düzeyinde zararsız.
+- **Hata biçimi:** Standart `ProblemDetails` JSON'u. Bilinmeyen şehir 404, geçersiz sorgu parametresi 400, POST 405. İstisna ayrıntısı dışarı sızmaz (`UseExceptionHandler`).
+- **CORS varsayılan kapalı:** `Cors:AllowedOrigins` tanımlıysa yalnızca o adreslere ve yalnızca GET'e açılır. Arayüz farklı bir adreste yayınlanınca (aşama 4-6) ayarlanır.
+- **Bağlantı dizesi:** Yalnızca `ConnectionStrings__Default` ortam değişkeninden; tanımlı değilse başlangıçta anlaşılır bir hatayla durur, değeri asla yazdırılmaz.
+- **API şemayı yönetmez:** Migration'ı toplayıcı uygular (K-015). API sadece okur (`IForecastReader`, `IEarthquakeReader`).
+- **Atıf:** `/api/sources` Open-Meteo (CC BY 4.0) ve USGS bilgisini verir; arayüz her sayfada gösterecek.
+- **Test:** `WebApplicationFactory` ile bellek içi test sunucusu + gerçek PostgreSQL (Testcontainers). Saat sabitlenir (`TimeProvider` değiştirilir). JSON şekli, 404/400/405, Türkçe karakterli URL, yuvarlama test edilir. Bilerek hata sokarak (deprem sıralamasını tersleyerek) testlerin gerçekten yakaladığı doğrulandı.
+- **Gerçek veriyle elle doğrulandı (2026-10-10):** Yerel PostgreSQL + gerçek toplanmış veri. Ankara bugün 15,1 °C, normal 16,2 °C, anomali −1,1 °C. Harita: 87 nokta, 72'sinde anomali (normali hesaplanan şehirler), 15'inde yok. 8 deprem, yeniden eskiye.

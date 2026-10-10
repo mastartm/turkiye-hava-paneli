@@ -31,9 +31,33 @@ await using (var db = dbFactory.CreateDbContext())
 const string UserAgent = "turkiye-hava-paneli/0.1 (portfolio project)";
 HttpClient NewClient(string baseAddress)
 {
-    var http = new HttpClient { BaseAddress = new Uri(baseAddress), Timeout = TimeSpan.FromSeconds(30) };
+    // Timeout tüm çağrıyı kapsar, yeniden deneme beklemeleri dahil: en kötü durumda 4 x 65 sn bekleme + istek süreleri sığsın.
+    var http = new HttpClient(new RateLimitRetryHandler(new HttpClientHandler()))
+    {
+        BaseAddress = new Uri(baseAddress),
+        Timeout = TimeSpan.FromMinutes(10)
+    };
     http.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
     return http;
+}
+
+// --normals: 1991-2020 iklim normallerini hesaplayıp saklar (tek seferlik iş; hesaplanmış şehirler atlanır).
+// --force ile hepsini yeniden hesaplar. Normal tahminler gibi sık değişmez, bu yüzden ayrı bir mod.
+if (args.Contains("--normals"))
+{
+    using var archiveHttp = NewClient("https://archive-api.open-meteo.com/");
+    var normals = new ClimateNormalService(
+        CityCatalog.All,
+        new OpenMeteoClimateProvider(archiveHttp),
+        new EfClimateNormalStore(dbFactory),
+        delayBetweenCities: TimeSpan.FromSeconds(1));
+
+    Console.WriteLine($"İklim normali hesabı başladı ({ClimateNormalService.PeriodStart.Year}-{ClimateNormalService.PeriodEnd.Year}).");
+    var nr = await normals.RunAsync(force: args.Contains("--force"), cts.Token);
+    Console.WriteLine($"Normal: {nr.Computed} hesaplandı, {nr.Skipped} atlandı (zaten vardı).");
+    foreach (var f in nr.Failed)
+        Console.Error.WriteLine($"  HATA şehir -> {f}");
+    return nr.HasFailures ? 1 : 0;
 }
 
 using var weatherHttp = NewClient("https://api.open-meteo.com/");
