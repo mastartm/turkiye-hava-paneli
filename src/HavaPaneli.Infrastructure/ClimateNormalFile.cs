@@ -35,6 +35,21 @@ public static class ClimateNormalFile
         writer.WriteLine("}}");
     }
 
+    /// <summary>
+    /// Dosyaya yazar: klasör yoksa oluşturur; önce geçici dosyaya yazıp tamamlanınca yerine taşır,
+    /// böylece yazma yarıda kesilirse eski dosya bozulmaz.
+    /// </summary>
+    public static void WriteToFile(string path, IReadOnlyDictionary<string, ClimateNormal> normals)
+    {
+        var fullPath = Path.GetFullPath(path);
+        Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+
+        var tmp = fullPath + ".tmp";
+        using (var fs = File.Create(tmp))
+            Write(fs, normals);
+        File.Move(tmp, fullPath, overwrite: true);
+    }
+
     // InvariantCulture: Türkçe kültürde ondalık ayraç virgüldür ve geçersiz JSON üretirdi.
     private static string Format(double value)
     {

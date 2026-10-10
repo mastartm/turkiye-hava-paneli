@@ -81,6 +81,42 @@ public class ClimateNormalFileTests
         finally { CultureInfo.CurrentCulture = old; }
     }
 
+    // ---- Dosyaya yazma (klasör yoksa, üzerine yazma, geçici dosya) ----
+
+    private static string TempDir() => Path.Combine(Path.GetTempPath(), "hava-test-" + Guid.NewGuid().ToString("N"));
+
+    [Fact]
+    public void Olmayan_Klasoru_Olusturup_Yazar()
+    {
+        var dir = TempDir();
+        try
+        {
+            var path = Path.Combine(dir, "alt", "normaller.json"); // ne "dir" ne "alt" var
+            ClimateNormalFile.WriteToFile(path, new Dictionary<string, ClimateNormal> { ["a"] = Normal(_ => 3) });
+
+            using var fs = File.OpenRead(path);
+            Assert.Equal(3, ClimateNormalFile.Read(fs)["a"].DailyMeansC[0]);
+        }
+        finally { if (Directory.Exists(dir)) Directory.Delete(dir, true); }
+    }
+
+    [Fact]
+    public void Mevcut_Dosyanin_Uzerine_Yazar_Ve_Gecici_Dosya_Birakmaz()
+    {
+        var dir = TempDir();
+        try
+        {
+            var path = Path.Combine(dir, "normaller.json");
+            ClimateNormalFile.WriteToFile(path, new Dictionary<string, ClimateNormal> { ["a"] = Normal(_ => 1) });
+            ClimateNormalFile.WriteToFile(path, new Dictionary<string, ClimateNormal> { ["a"] = Normal(_ => 2) });
+
+            using (var fs = File.OpenRead(path))
+                Assert.Equal(2, ClimateNormalFile.Read(fs)["a"].DailyMeansC[0]);
+            Assert.False(File.Exists(path + ".tmp"));
+        }
+        finally { if (Directory.Exists(dir)) Directory.Delete(dir, true); }
+    }
+
     [Fact]
     public void Bos_Liste_Yazilip_Okunabilir()
     {

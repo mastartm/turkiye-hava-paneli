@@ -66,10 +66,7 @@ if (args.Contains("--export-normals"))
         return 1;
     }
 
-    // Önce geçici dosyaya yaz, sonra yerine taşı: yazma yarıda kesilirse eski dosya bozulmaz.
-    var tmp = path + ".tmp";
-    await using (var fs = File.Create(tmp)) ClimateNormalFile.Write(fs, exported);
-    File.Move(tmp, path, overwrite: true);
+    ClimateNormalFile.WriteToFile(path, exported);
     Console.WriteLine($"{exported.Count} şehrin normali yazıldı: {path} ({new FileInfo(path).Length / 1024} KB)");
     return 0;
 }
