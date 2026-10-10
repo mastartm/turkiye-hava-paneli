@@ -65,3 +65,16 @@ Her karar: **ne**, **neden**, **reddedilen alternatif**. Aşamalar ilerledikçe 
 - **İptal istisnası yutulmaz:** `catch ... when (ex is not OperationCanceledException)`. Aksi halde program durdurulamazdı.
 - **Zaman `TimeProvider` ile:** `DateTime.Now` yerine enjekte edilen zaman; testte sabit saat verilir.
 - **Kibar istek hızı:** Şehirler arası kısa bekleme (ücretsiz API'ye nazik davranmak için).
+
+## K-013: Saklama: EF Core + Npgsql, tablo sınıfları Domain'den ayrı
+- **Neden:** Domain kayıtları (`City`, `DailyForecast`, `Earthquake`) saf kalır; EF'nin ihtiyaçları (anahtar, ilişki, tablo adı) `Persistence/` altındaki `*Row` sınıflarında. Dönüşüm bilerek elle yapılıyor, küçük ve açık.
+- **Tablolar:** `cities` (ad benzersiz), `daily_forecasts` (bileşik anahtar: şehir + gün), `earthquakes` (anahtar: USGS kimliği, zamana indeks).
+- **Upsert:** Aynı şehir+gün ya da aynı deprem tekrar gelirse güncellenir, çoğalmaz. Tahmin her gün değişir; USGS de sonradan büyüklüğü düzeltebilir.
+- **Zaman:** Hep UTC saklanır (`timestamptz`). Testte +03:00 verilen zamanın UTC olarak aynen geri geldiği doğrulanıyor.
+- **`IDbContextFactory`:** Her çağrıda kısa ömürlü context. Uzun yaşayan tek context yüzlerce kaydı izleyip yavaşlar, hatadan sonra bozuk kalabilir.
+- **Migration:** `Persistence/Migrations/`. Testler gerçek migration'ı çalıştırır; yani migration dosyası da test ediliyor.
+
+## K-014: Yeni paketler ve gerekçeleri
+- `Npgsql.EntityFrameworkCore.PostgreSQL` 8.0.11: EF Core'un PostgreSQL sürücüsü. Sürüm .NET 8 ile uyumlu olsun diye 8.0.x'e sabitlendi (makinede .NET 10 SDK var, varsayılan olarak 10.x paket gelirdi).
+- `Microsoft.EntityFrameworkCore.Design` 8.0.11 + yerel `dotnet-ef` aracı (`dotnet-tools.json`): migration üretmek için. Genel (global) kurulum yerine repoya özel kurulum: herkes aynı sürümü kullanır.
+- `Testcontainers.PostgreSql`: testte geçici gerçek PostgreSQL açar. **Alternatif:** EF InMemory/SQLite. Reddedildi çünkü upsert, tarih tipleri ve migration PostgreSQL'de farklı davranabilir; sahte veritabanı bu hataları gizler. **Bedel:** testler Docker ister ve ilk çalışmada imaj indirir (~yirmi-otuz sn).

@@ -67,3 +67,20 @@ C: Zamanı dışarıdan verebilmek için. Testte sabit bir saat verip "son 7 gü
 
 **S: İptal (CancellationToken) neden özel ele alındı?**
 C: Hataları yakalarken iptali de yakalarsam program durdurulamaz. Bu yüzden iptal istisnasını filtreyle dışarıda bırakıyorum.
+
+## Aşama 2: veritabanı
+
+**S: Testte neden SQLite/InMemory değil gerçek PostgreSQL?**
+C: Upsert, tarih tipleri ve migration veritabanına göre farklı davranabilir. Sahte veritabanı bu hataları gizler. Bedeli: testler Docker istiyor.
+
+**S: Tahmin tablosunun anahtarı neden (şehir, gün)?**
+C: Bir şehrin bir günü için tek tahmin olmalı. Yeni tahmin gelince üzerine yazarım; geçmiş tahminleri tutmak istesem anahtara "çekilme zamanı" eklerdim.
+
+**S: Zamanı neden UTC saklıyorsun?**
+C: Saat dilimi karışıklığını önlemek için. Gösterirken yerel saate çeviririm. Testte +03:00 verilen zamanın UTC olarak aynen geri geldiğini doğruluyorum.
+
+**S: Neden her çağrıda yeni DbContext?**
+C: Uzun yaşayan bir context yüzlerce kaydı bellekte izleyip yavaşlar, hata sonrası bozulabilir. Kısa ömürlü context temiz bir başlangıç verir.
+
+**S: USGS aynı depremi sonradan değiştirirse?**
+C: Kimliğe göre güncelliyorum. İlk çekimde "automatic" olan büyüklük sonradan "reviewed" olunca değişebilir.
