@@ -181,3 +181,8 @@ Her karar: **ne**, **neden**, **reddedilen alternatif**. Aşamalar ilerledikçe 
 - **Test:** Sahte depoyla servis testleri; gerçek PostgreSQL'le "veritabanı A → dosya → boş veritabanı B" uçtan uca testi.
 - **Yuvarlama bedeli:** 0,01 °C sapma; anomali tek ondalıkla gösterildiği için görünmez.
 - **Lisans:** Dosya Open-Meteo/ERA5-Land verisinden türetilmiştir (CC BY 4.0); dosya başlığındaki `source` alanı ve arayüz atfı bunu belirtir.
+
+### K-025 doğrulama notu (2026-10-10)
+- **Üretilen dosya:** `data/climate-normals.json`, 174 KB, 87 şehir, her biri 366 değer. Katalogla birebir eşleşiyor (eksik/fazla kimlik yok), NaN yok, `-0` yok, şehirler sıralı. Değerler makul: Ankara 14 Ocak 1,0 °C / 14 Temmuz 24,3 °C; Erzurum −7,6 / 17,7; Girne 11,7 / 29,8; Van −3,9 / 22,7.
+- **Gerçek komut denemesi:** Geçici PostgreSQL konteynerinde (boş veritabanı) `--import-normals data/climate-normals.json`: 87 şehir yüklendi, Ankara 15 Ocak değeri dosyayla aynı (0,97); ikinci çalıştırmada satır sayısı değişmedi (çoğalma yok). Hata yolları: dosya yok / bozuk JSON / yol verilmemiş → anlaşılır mesaj, çıkış kodu 2.
+- **Hata dersi:** İlk sürümde `data/` klasörü yoksa dışa aktarma `DirectoryNotFoundException` ile çöktü; yazma mantığı `Program.cs` içindeydi ve test edilmemişti. Düzeltme: yazma `ClimateNormalFile.WriteToFile`'a taşındı, olmayan klasörü oluşturur, testle korunur.
