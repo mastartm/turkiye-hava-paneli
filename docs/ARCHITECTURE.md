@@ -44,3 +44,50 @@ Her karar: **ne**, **neden**, **reddedilen alternatif**. Aşamalar ilerledikçe 
 ## K-009: Tahmin değerleri nullable
 - **Neden:** "Veri yok" ile "0 derece" farklıdır. Kaynak bazı günlerde null verebilir (testlerle korunuyor).
 - **Doğrulandı:** `temperature_2m_mean` parametresi hem tahmin hem geçmiş (archive) API'sinde çalışıyor (10 Ekim 2026'da gerçek istekle denendi).
+
+## K-010: Şehir listesi kodda sabit (`CityCatalog`), veritabanı tablosu değil
+- **Neden:** 81 il ve 6 KKTC ilçesi değişmeyen referans veridir. Tabloya koymak migration, seed ve okuma kodu ekler, kazancı yok.
+- **Alternatif:** `cities` tablosu. Liste sık değişseydi ya da kullanıcı şehir ekleyebilseydi doğru olurdu.
+- **Doğrulama:** Koordinatları elle yazdım. Open-Meteo konum arama servisiyle çapraz kontrol ettim: 87 şehrin 85'i en yakın sonuca 25 km içinde. Kocaeli ve Sakarya'yı servis il adıyla başka yer olarak buldu; merkez ilçe adlarıyla (İzmit, Adapazarı) aratınca 1 km içinde eşleşti. Testler sayıyı, benzersizliği ve kaba sınır kutusunu korur. Hatay için Antakya merkezi kullanıldı.
+
+## K-011: Deprem katmanı: `IEarthquakeProvider` + USGS uygulaması
+- **Neden:** Hava durumundaki desenin aynısı (K-002, K-006). USGS resmi ve belgeli bir API; AFAD ve Kandilli'nin belgeli açık API'si yok (K-004).
+- **Koordinat kutusu:** `GeoBounds.TurkiyeAndKktc` (34.5–42.5 enlem, 25–45 boylam). Kıyıya yakın komşu bölgeleri de içerir (Yunan adaları, Suriye sınırı). Bu kasıtlı: kıyıdaki depremler Türkiye'yi de etkiler. Gerekirse arayüzde ülkeye göre süzeriz.
+- **GeoJSON tuzağı:** Koordinat sırası `[boylam, enlem, derinlik]`. Testte enlem ve boylamın yerleri ayrı ayrı doğrulanıyor.
+- **Büyüklüğü `null` kayıtlar atlanır:** 0 sayıp göstermek yanlış veri olurdu.
+- **Sınır:** USGS tek sorguda en fazla 20.000 sonuç döner. Bu bölge ve kısa süre için yeterli; çok uzun süre istenirse sayfalama gerekir (şimdilik yok).
+- **Doğrulanmayan:** Sağlayıcı kodunu gerçek USGS'ye karşı C# ile çalıştırmadım. Yanıt biçimini `curl` ile gerçek yanıttan doğruladım, testler o yanıtın kısaltılmışıyla yazıldı. İlk gerçek çağrı aşama 2'de veri toplayıcıyla olacak.
+- **USGS atıf/şart:** Resmi kullanım şartı sayfasını okumadım; arayüzde USGS'ye atıf göstereceğiz.
+
+## K-012: Toplama mantığı Application'da (`DataCollectionService`), saklama arayüzleri (`IWeatherStore`, `IEarthquakeStore`)
+- **Neden:** Servis dış kaynakları ve veritabanını yalnızca arayüzlerle bilir; sahtelerle hızlı test edilir. Toplayıcı program (K-013) bu servisi çağıran ince bir kabuk olur.
+- **Hata yönetimi:** Bir şehir ya da deprem kaynağı hata verirse diğerleri devam eder (kısmi veri, hiç veri olmamasından iyidir). Hatalar sonuçta listelenir, toplayıcı sıfırdan farklı çıkış koduyla bildirir.
+- **İptal istisnası yutulmaz:** `catch ... when (ex is not OperationCanceledException)`. Aksi halde program durdurulamazdı.
+- **Zaman `TimeProvider` ile:** `DateTime.Now` yerine enjekte edilen zaman; testte sabit saat verilir.
+- **Kibar istek hızı:** Şehirler arası kısa bekleme (ücretsiz API'ye nazik davranmak için).
+
+## K-013: Saklama: EF Core + Npgsql, tablo sınıfları Domain'den ayrı
+- **Neden:** Domain kayıtları (`City`, `DailyForecast`, `Earthquake`) saf kalır; EF'nin ihtiyaçları (anahtar, ilişki, tablo adı) `Persistence/` altındaki `*Row` sınıflarında. Dönüşüm bilerek elle yapılıyor, küçük ve açık.
+- **Tablolar:** `cities` (ad benzersiz), `daily_forecasts` (bileşik anahtar: şehir + gün), `earthquakes` (anahtar: USGS kimliği, zamana indeks).
+- **Upsert:** Aynı şehir+gün ya da aynı deprem tekrar gelirse güncellenir, çoğalmaz. Tahmin her gün değişir; USGS de sonradan büyüklüğü düzeltebilir.
+- **Zaman:** Hep UTC saklanır (`timestamptz`). Testte +03:00 verilen zamanın UTC olarak aynen geri geldiği doğrulanıyor.
+- **`IDbContextFactory`:** Her çağrıda kısa ömürlü context. Uzun yaşayan tek context yüzlerce kaydı izleyip yavaşlar, hatadan sonra bozuk kalabilir.
+- **Migration:** `Persistence/Migrations/`. Testler gerçek migration'ı çalıştırır; yani migration dosyası da test ediliyor.
+
+## K-014: Yeni paketler ve gerekçeleri
+- `Npgsql.EntityFrameworkCore.PostgreSQL` 8.0.11: EF Core'un PostgreSQL sürücüsü. Sürüm .NET 8 ile uyumlu olsun diye 8.0.x'e sabitlendi (makinede .NET 10 SDK var, varsayılan olarak 10.x paket gelirdi).
+- `Microsoft.EntityFrameworkCore.Design` 8.0.11 + yerel `dotnet-ef` aracı (`dotnet-tools.json`): migration üretmek için. Genel (global) kurulum yerine repoya özel kurulum: herkes aynı sürümü kullanır.
+- `Testcontainers.PostgreSql`: testte geçici gerçek PostgreSQL açar. **Alternatif:** EF InMemory/SQLite. Reddedildi çünkü upsert, tarih tipleri ve migration PostgreSQL'de farklı davranabilir; sahte veritabanı bu hataları gizler. **Bedel:** testler Docker ister ve ilk çalışmada imaj indirir (~yirmi-otuz sn).
+
+## K-015: Toplayıcı ayrı konsol programı ("çalış ve bitir"), zamanlama GitHub Actions'ta
+- **Neden:** K-005'teki sorun: Render ücretsiz katmanı 15 dk sessizlikte API'yi uyutur, API içindeki `BackgroundService` de durur. Toplayıcı API'den bağımsız bir program olursa, zamanlanmış bir iş (GitHub Actions, public repoda ücretsiz olmalı) onu saatte bir çalıştırır; API uyusa da veri akar.
+- **Alternatif:** API içinde `BackgroundService`. Daha basit, ama ücretsiz barındırmada güvenilmez. Reddedildi.
+- **Çıkış kodları:** 0 tamam, 1 kısmi hata (veri yine de yazıldı), 2 yapılandırma hatası. Zamanlanmış işte hata görünür olur.
+- **Güvenlik:** Bağlantı dizesi yalnızca `ConnectionStrings__Default` ortam değişkeninden okunur ve hiçbir zaman yazdırılmaz.
+- **Şema sahibi:** Toplayıcı açılışta migration'ları uygular. API gelince şema sorumluluğunu yeniden değerlendiririz.
+- **Henüz yapılmadı:** GitHub Actions zamanlaması ve canlı veritabanı (Neon) aşama 6'da; hesap açma adımları kullanıcıya ait.
+
+## K-016: Yerel veritabanı Docker Compose ile, parola `.env`'den
+- `docker-compose.yml` sadece `db` servisi. Parola `${POSTGRES_PASSWORD:?...}` ile zorunlu: tanımlı değilse compose hata verir, boş/varsayılan parolayla çalışmaz. Port yalnızca `127.0.0.1`'e açılır.
+- **Doğrulandı (2026-10-10):** Geçici konteynerde gerçek uçtan uca deneme: 87/87 şehir, 609 tahmin satırı (87×7 gün), 8 deprem; ikinci çalıştırmada sayılar aynı kaldı (upsert çalışıyor). Ankara'nın bugünkü değeri (7,7 / 24,1 °C) başta `curl` ile alınan yanıtla birebir eşleşti.
+- **Bilinen kozmetik tutarsızlık:** Tablo adları küçük harf (`cities`), sütun adları EF varsayılanıyla BüyükHarf (`"Name"`). Çalışmayı etkilemiyor; elle SQL yazarken sütunları tırnak içinde yazmak gerekir. İstenirse snake_case adlandırma paketiyle düzeltilebilir (yeni bağımlılık olduğu için şimdilik yapılmadı).
