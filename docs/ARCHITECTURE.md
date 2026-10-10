@@ -49,3 +49,12 @@ Her karar: **ne**, **neden**, **reddedilen alternatif**. Aşamalar ilerledikçe 
 - **Neden:** 81 il ve 6 KKTC ilçesi değişmeyen referans veridir. Tabloya koymak migration, seed ve okuma kodu ekler, kazancı yok.
 - **Alternatif:** `cities` tablosu. Liste sık değişseydi ya da kullanıcı şehir ekleyebilseydi doğru olurdu.
 - **Doğrulama:** Koordinatları elle yazdım. Open-Meteo konum arama servisiyle çapraz kontrol ettim: 87 şehrin 85'i en yakın sonuca 25 km içinde. Kocaeli ve Sakarya'yı servis il adıyla başka yer olarak buldu; merkez ilçe adlarıyla (İzmit, Adapazarı) aratınca 1 km içinde eşleşti. Testler sayıyı, benzersizliği ve kaba sınır kutusunu korur. Hatay için Antakya merkezi kullanıldı.
+
+## K-011: Deprem katmanı: `IEarthquakeProvider` + USGS uygulaması
+- **Neden:** Hava durumundaki desenin aynısı (K-002, K-006). USGS resmi ve belgeli bir API; AFAD ve Kandilli'nin belgeli açık API'si yok (K-004).
+- **Koordinat kutusu:** `GeoBounds.TurkiyeAndKktc` (34.5–42.5 enlem, 25–45 boylam). Kıyıya yakın komşu bölgeleri de içerir (Yunan adaları, Suriye sınırı). Bu kasıtlı: kıyıdaki depremler Türkiye'yi de etkiler. Gerekirse arayüzde ülkeye göre süzeriz.
+- **GeoJSON tuzağı:** Koordinat sırası `[boylam, enlem, derinlik]`. Testte enlem ve boylamın yerleri ayrı ayrı doğrulanıyor.
+- **Büyüklüğü `null` kayıtlar atlanır:** 0 sayıp göstermek yanlış veri olurdu.
+- **Sınır:** USGS tek sorguda en fazla 20.000 sonuç döner. Bu bölge ve kısa süre için yeterli; çok uzun süre istenirse sayfalama gerekir (şimdilik yok).
+- **Doğrulanmayan:** Sağlayıcı kodunu gerçek USGS'ye karşı C# ile çalıştırmadım. Yanıt biçimini `curl` ile gerçek yanıttan doğruladım, testler o yanıtın kısaltılmışıyla yazıldı. İlk gerçek çağrı aşama 2'de veri toplayıcıyla olacak.
+- **USGS atıf/şart:** Resmi kullanım şartı sayfasını okumadım; arayüzde USGS'ye atıf göstereceğiz.

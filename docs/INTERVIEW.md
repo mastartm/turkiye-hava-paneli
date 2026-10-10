@@ -42,3 +42,17 @@ C: Değişmeyen referans veri. Tablo migration ve okuma kodu getirirdi, faydası
 
 **S: Koordinatların doğru olduğunu nasıl bildin?**
 C: İki katman. Testlerle sayı, benzersizlik ve ülke sınır kutusunu koruyorum. Ayrıca bir kerelik betikle Open-Meteo'nun konum servisine karşı kontrol ettim. İki sapma çıktı, ikisi de servisin il adını başka bir yere eşlemesinden kaynaklanıyordu, merkez ilçe adıyla doğrulandı.
+
+## Aşama 2: deprem sağlayıcısı
+
+**S: GeoJSON'da dikkat ettiğin bir şey var mı?**
+C: Koordinat sırası `[boylam, enlem]`, çoğu insanın alışkın olduğunun tersi. Enlem ile boylamı karıştırmamak için testte iki değeri ayrı ayrı doğruluyorum.
+
+**S: Büyüklüğü `null` olan depremi ne yaptın?**
+C: Atladım. 0 sayıp göstermek yanlış veri olurdu, "veri yok"u haritaya basmak da anlamsız.
+
+**S: Koordinat kutusunda neden komşu ülkeler de var?**
+C: Kıyıdaki depremler (Yunan adaları, Suriye sınırı) Türkiye'yi de etkiler. Kutuyu dar tutarsam bunları kaçırırım. Arayüzde ülkeye göre süzmek sonradan yapılabilir.
+
+**S: USGS ne kadar veri döndürebilir?**
+C: Tek sorguda en fazla 20.000. Bu bölge ve kısa süre için yeterli. Çok uzun süre sorgularsam sayfalama gerekir; şimdilik yok.

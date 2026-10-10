@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Net;
-using System.Text;
 using HavaPaneli.Domain;
 using HavaPaneli.Infrastructure;
 
@@ -16,20 +15,6 @@ public class OpenMeteoWeatherProviderTests
         """;
 
     private static readonly City Ankara = new("Ankara", Country.Turkiye, 39.93, 32.86);
-
-    private sealed class StubHandler(HttpStatusCode status, string body) : HttpMessageHandler
-    {
-        public Uri? LastRequest { get; private set; }
-
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
-        {
-            LastRequest = request.RequestUri;
-            return Task.FromResult(new HttpResponseMessage(status)
-            {
-                Content = new StringContent(body, Encoding.UTF8, "application/json")
-            });
-        }
-    }
 
     private static (OpenMeteoWeatherProvider provider, StubHandler handler) Create(
         string body = SampleJson, HttpStatusCode status = HttpStatusCode.OK)
