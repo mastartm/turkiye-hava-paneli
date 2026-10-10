@@ -141,3 +141,26 @@ C: Sabit UTC+3. Türkiye yaz saati uygulamıyor, böylece Windows ve Linux'ta sa
 
 **S: Veri yoksa API ne döner?**
 C: Şehir yoksa 404. Şehir var ama verisi yoksa boş liste ve boş değerler; sıfır göstermem, çünkü "veri yok" ile "0 derece" farklı şeyler.
+
+## Aşama 3: API
+
+**S: Controller'larda neden iş mantığı yok?**
+C: Controller sadece HTTP ile ilgilenir: parametre al, servisi çağır, sonucu JSON yap. İş kuralları Application'da olduğu için HTTP olmadan da test edebiliyorum.
+
+**S: Neden DTO? Domain sınıfını doğrudan döndürsen olmaz mıydı?**
+C: Domain sınıfının şekli değişince arayüzün beklediği JSON de kazara değişirdi. DTO API'nin sabit sözleşmesi.
+
+**S: API'yi nasıl test ettin?**
+C: `WebApplicationFactory` ile bellek içinde gerçek HTTP istekleri atıyorum, arkada gerçek PostgreSQL (Testcontainers). JSON şeklini, 404/400/405 durumlarını, Türkçe karakterli URL'yi ve yuvarlamayı kontrol ediyorum. Testlerin gerçekten bir şey yakaladığını görmek için bilerek hata soktum (deprem sıralamasını ters çevirdim), bir test kırmızıya döndü.
+
+**S: Hata durumunda API ne döner?**
+C: Standart ProblemDetails JSON'u: bilinmeyen şehir 404, geçersiz parametre 400, yanlış yöntem 405. İstisna ayrıntısı dışarı sızmaz.
+
+**S: Neden CORS varsayılan kapalı?**
+C: Güvenli varsayılan. Arayüzün adresini yapılandırmaya yazınca yalnızca o adrese ve yalnızca GET'e açılıyor.
+
+**S: Veritabanı şemasını kim yönetiyor?**
+C: Toplayıcı migration'ı uyguluyor. API sadece okuyor, yani yanlışlıkla şemayı değiştiremez.
+
+**S: Ekranda `ortalama − normal` ile `anomali` bazen 0,1 farklı çıkabilir, neden?**
+C: Üçünü ayrı ayrı bir ondalığa yuvarlıyorum. Hesap tam hassasiyetle yapılıyor, sadece gösterilen değer yuvarlanıyor.

@@ -125,3 +125,16 @@ Her karar: **ne**, **neden**, **reddedilen alternatif**. Aşamalar ilerledikçe 
 - **"Bugün" = Türkiye saati (sabit UTC+3):** Türkiye 2016'dan beri yaz saati uygulamıyor. Sabit ofset, işletim sistemine göre değişen saat dilimi adlarına (Windows `Turkey Standard Time`, Linux `Europe/Istanbul`) bağımlı olmaz. Test: 22:30 UTC, Türkiye'de ertesi güne düşer. **Bilinen sınır:** KKTC yaz saati uyguladığı için yazın bir saatlik fark olabilir.
 - **Harita özeti verisiz şehri de listeler** (boş değerlerle): arayüz "veri yok" gösterebilsin, nokta kaybolmasın.
 - **Deprem sorgusu sınırları:** 1-30 gün, büyüklük 0-10, en fazla 500 sonuç. Sınırsız sorgu veritabanını yorabilir.
+
+## K-021: API: ASP.NET Core, ince controller'lar, DTO'lar
+- **Uçlar (hepsi GET):** `/health`, `/api/cities`, `/api/cities/{id}/forecast`, `/api/map`, `/api/earthquakes?days=&minMagnitude=`, `/api/sources`.
+- **Controller'lar ince:** Parametreyi alır, Application servisini çağırır, DTO'ya çevirir. İş mantığı yok.
+- **DTO'lar (`Dtos.cs`):** API'nin sözleşmesi. Domain sınıflarını doğrudan vermiyoruz; Domain değişince arayüzün beklediği JSON kazara bozulmasın.
+- **Çıktı yuvarlaması:** Sıcaklıklar tek ondalığa yuvarlanır (`16.1`), `16.174888888888887` değil. Hesap tam hassasiyetle yapılır, yalnızca dışarı verilen değer yuvarlanır. Bedel: `ortalama − normal` ile `anomali` ekranda 0,1 sapabilir (yuvarlama), bu gösterim düzeyinde zararsız.
+- **Hata biçimi:** Standart `ProblemDetails` JSON'u. Bilinmeyen şehir 404, geçersiz sorgu parametresi 400, POST 405. İstisna ayrıntısı dışarı sızmaz (`UseExceptionHandler`).
+- **CORS varsayılan kapalı:** `Cors:AllowedOrigins` tanımlıysa yalnızca o adreslere ve yalnızca GET'e açılır. Arayüz farklı bir adreste yayınlanınca (aşama 4-6) ayarlanır.
+- **Bağlantı dizesi:** Yalnızca `ConnectionStrings__Default` ortam değişkeninden; tanımlı değilse başlangıçta anlaşılır bir hatayla durur, değeri asla yazdırılmaz.
+- **API şemayı yönetmez:** Migration'ı toplayıcı uygular (K-015). API sadece okur (`IForecastReader`, `IEarthquakeReader`).
+- **Atıf:** `/api/sources` Open-Meteo (CC BY 4.0) ve USGS bilgisini verir; arayüz her sayfada gösterecek.
+- **Test:** `WebApplicationFactory` ile bellek içi test sunucusu + gerçek PostgreSQL (Testcontainers). Saat sabitlenir (`TimeProvider` değiştirilir). JSON şekli, 404/400/405, Türkçe karakterli URL, yuvarlama test edilir. Bilerek hata sokarak (deprem sıralamasını tersleyerek) testlerin gerçekten yakaladığı doğrulandı.
+- **Gerçek veriyle elle doğrulandı (2026-10-10):** Yerel PostgreSQL + gerçek toplanmış veri. Ankara bugün 15,1 °C, normal 16,2 °C, anomali −1,1 °C. Harita: 87 nokta, 72'sinde anomali (normali hesaplanan şehirler), 15'inde yok. 8 deprem, yeniden eskiye.
