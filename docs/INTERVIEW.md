@@ -178,3 +178,23 @@ C: Veri kaynağı KKTC'yi tek poligon olarak veriyor. Sahte sınır uydurmak yer
 
 **S: 40 MB'lık dosyayı neden repoya koymadın?**
 C: Büyük ve içinde dünyanın geri kalanı var. Bir betikle sadece Türkiye + KKTC'yi ayıklayıp basitleştirdim (109 KB). Betik repoda, çıktı tekrar üretilebilir.
+
+## Aşama 4: harita arayüzü
+
+**S: Hover'da ilin yükselmesini nasıl yaptın?**
+C: Üzerine gelinen ilin bir kopyasını, fare olaylarını almayan ayrı bir katmanda çiziyorum ve CSS ile yukarı kaydırıp gölge veriyorum. Asıl yolu DOM'da öne taşısaydım, eleman fare altından kayacağı için mouseleave/mouseenter tetiklenip titreme olabilirdi.
+
+**S: Neden Leaflet değil de d3-geo?**
+C: Hover'da yükselme gibi etkileri SVG ve CSS ile tam kontrolle yapmak istedim, ayrıca altlık harita karosu (dış servis, limit, atıf) gerekmedi. Bedeli: yakınlaştırma ve kaydırmayı gerekirse ben yazarım.
+
+**S: Hızlı tıklamada eski yanıtın yenisinin üstüne yazılmasını nasıl önledin?**
+C: `useApi` kancası anahtar değişince önceki isteği `AbortController` ile iptal ediyor. İptal edilen istek hata olarak gösterilmiyor.
+
+**S: Veri yoksa harita ne gösteriyor?**
+C: Ayrı bir nötr gri ("veri yok"). "Normal" (0) farklı bir renk, ikisi karışmasın diye testle koruyorum.
+
+**S: KKTC'yi nasıl gösterdin?**
+C: Kaynak veri KKTC'yi tek poligon veriyor, ben de tek bölge çizdim ve rengini ilçe anomalilerinin ortalaması yaptım. Tıklayınca yan panelde 6 ilçe listeleniyor. Sahte ilçe sınırı uydurmadım.
+
+**S: Arayüzü nasıl doğruladın, neyi doğrulayamadın?**
+C: Gerçek API ve gerçek veriyle tarayıcıda hover, tıklama, KKTC akışı ve klavye seçimini denedim, yan panel değerlerini API ile karşılaştırdım. Ekran görüntüsü alamadığım için görsel görünümü gözle doğrulamadım; onu açıkça not ettim.

@@ -153,3 +153,16 @@ Her karar: **ne**, **neden**, **reddedilen alternatif**. Aşamalar ilerledikçe 
 - **Sürümler (şablonun getirdiği güncel):** React 19, Vite 8, TypeScript 6. `npm run build` başarılı (tarih: 2026-10-10).
 - **`d3-geo` neden:** Yalnızca GeoJSON'u SVG yoluna çeviren projeksiyon ve yol üretici kısmı (tüm D3 değil). Hazır harita kütüphanesi (Leaflet) yerine seçildi, çünkü "üzerine gelince ilin yükselmesi" etkisi SVG + CSS ile tam kontrolle yapılır ve altlık harita karosu (dış servis, limit, atıf) gerekmez. **Bedel:** yakınlaştırma/kaydırmayı gerekirse biz yazarız.
 - **Not:** Şablondaki demo içeriği (sayaç, örnek görseller) bir sonraki adımda gerçek içerikle değiştirilecek; bu commit yalnızca iskelet.
+
+## K-024: Harita arayüzü: SVG + d3-geo, hover'da yükselen kopya, yan panel
+- **Çizim:** `TurkeyMap.tsx` GeoJSON'u `d3-geo` (`geoMercator().fitExtent` + `geoPath`) ile SVG yoluna çevirir. 81 il + KKTC = 82 `<path>`. Projeksiyon yalnızca sınır verisi değişince hesaplanır (`useMemo`).
+- **Hover'da yükselme:** Üzerine gelinen ilin **kopyası** ayrı bir üst katmanda (`pointer-events: none`) çizilir; CSS ile yukarı kayar ve gölge alır. **Neden kopya:** Asıl yolu DOM'da öne taşımak, eleman fare altından kayınca `mouseleave/mouseenter` tetikleyip titreme (flicker) yapabilir. Kopya fare olaylarını almadığı için asıl yol yerinde kalır. `prefers-reduced-motion` ile animasyon kapanır.
+- **KKTC:** Haritada tek bölge (kaynak tek poligon, K-022). Rengi, ilçe anomalilerinin ortalaması (verisi olmayanlar hariç). Tıklayınca yan panel 6 ilçeyi listeler; bir ilçe seçilince o ilçenin tahmini gelir, "← KKTC" geri döner.
+- **Anomali renkleri:** 5 kova (mavi → gri → turuncu/kırmızı) + "veri yok" (nötr gri). Veri yok ile "normal (0)" ayrı renk; test korur. `anomaly.ts` saf fonksiyonlardan oluşur.
+- **Erişilebilirlik:** Her il `role="button"`, klavyeyle odaklanır, Enter/Boşluk ile seçilir; `aria-label` il adı ve sapmayı söyler.
+- **API'ye erişim:** Geliştirmede Vite vekili (`/api` → `127.0.0.1:5099`), CORS gerekmez. Canlıda `VITE_API_URL` (derleme zamanı) ve API'de `Cors__AllowedOrigins`.
+- **Yarış durumu:** `useApi` anahtar değişince önceki isteği iptal eder; hızlı art arda tıklamada eski yanıt yenisinin üstüne yazmaz.
+- **Sayı biçimi:** `toLocaleString` yerine elle (virgül, gerçek eksi işareti `−`), çünkü ICU/tarayıcı farkından bağımsız ve deterministik olmalı.
+- **Yeni paket gerekçesi:** `vitest` (Vite ile aynı yapılandırma, ek derleme adımı yok). `d3-geo` için bkz. K-023.
+- **Doğrulama (2026-10-10, gerçek API + gerçek veri, tarayıcıda):** 82 bölge çizildi; renk dağılımı: 10 bölge "veri yok" (normali henüz hesaplanamayan 9 il + KKTC). Hover başlığı, yükselen kopyanın oluşup silinmesi, tıklama, yan panel değerleri (Ankara 15,1° / normal 16,2° / sapma −1,1°, API ile birebir), KKTC → ilçe listesi → Girne → geri akışı ve klavyeyle seçim denendi. Coğrafi yerleşim sayısal olarak kontrol edildi (İstanbul batıda, Erzurum doğuda, KKTC Mersin'in güneybatısında).
+- **Doğrulanamayan:** Ekran görüntüsü alınamadığı için görünümü (renkler, gölge, yerleşim) gözle doğrulamadım. Mobil görünümü ve koyu modu denemedim. Bileşenler için otomatik test yok (yalnızca saf mantık testleri: 17 test).
