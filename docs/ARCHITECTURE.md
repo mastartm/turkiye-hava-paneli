@@ -138,3 +138,34 @@ Her karar: **ne**, **neden**, **reddedilen alternatif**. Aşamalar ilerledikçe 
 - **Atıf:** `/api/sources` Open-Meteo (CC BY 4.0) ve USGS bilgisini verir; arayüz her sayfada gösterecek.
 - **Test:** `WebApplicationFactory` ile bellek içi test sunucusu + gerçek PostgreSQL (Testcontainers). Saat sabitlenir (`TimeProvider` değiştirilir). JSON şekli, 404/400/405, Türkçe karakterli URL, yuvarlama test edilir. Bilerek hata sokarak (deprem sıralamasını tersleyerek) testlerin gerçekten yakaladığı doğrulandı.
 - **Gerçek veriyle elle doğrulandı (2026-10-10):** Yerel PostgreSQL + gerçek toplanmış veri. Ankara bugün 15,1 °C, normal 16,2 °C, anomali −1,1 °C. Harita: 87 nokta, 72'sinde anomali (normali hesaplanan şehirler), 15'inde yok. 8 deprem, yeniden eskiye.
+
+## K-022: Harita sınırları (Natural Earth, kamu malı) ve KKTC
+- **Karar:** Sınırlı (choropleth) harita: iller tıklanabilir, üzerine gelince yükselir, tıklayınca yan panel açılır. Noktalı harita yerine bu seçildi (kullanıcı kararı).
+- **Kaynak:** Natural Earth 10m `admin_1_states_provinces` (kamu malı: atıf zorunlu değil, ticari kullanım dahil serbest; yine de arayüzde "Made with Natural Earth" yazılır). 50m sürümünde Türkiye illeri **yoktu** (yalnızca birkaç ülke var); bu yüzden 40,7 MB'lık 10m dosyası kullanıldı. İndirilen ham dosya repoya girmez.
+- **Üretilen dosya:** `web/public/data/turkiye-kktc.geojson` (~109 KB, 82 özellik: 81 il + KKTC). Üretim betiği `scripts/build-geojson.mjs`: Douglas-Peucker ile basitleştirme (~500 m tolerans), 3 ondalık koordinat, minik ada/delik atma. Betiği temizledikten sonra aynı çıktıyı verdiği doğrulandı.
+- **İl adlarına güvenilmedi:** Natural Earth adlarında yazım hataları var (`Kinkkale`, `Zinguldak`) ve Türkçe karakter yok. Bunun yerine her ilin içine `CityCatalog` koordinatının düşüp düşmediğine bakılarak eşlendi; kimlik (`id`) katalogdaki slug'dır (API ile aynı, ör. `istanbul`).
+- **Çapraz doğrulama sonucu:** 81/81 il eşleşti. Tekirdağ koordinatı poligonun ~1,5 km dışında (Marmara kıyısı), yedek eşleme (tek eşleşmeyen il + tek eşleşmeyen şehir, < 5 km) ile bağlandı. Girne koordinatı KKTC poligonunun ≤3,4 km dışında (köşe uzaklığı, gerçeği olduğundan büyük gösterir); sorun değil.
+- **KKTC:** Natural Earth'te tek poligon (`Northern Cyprus`). Haritada **tek bölge** olarak çizilecek; 6 ilçe (Lefkoşa, Girne, Gazimağusa, Güzelyurt, İskele, Lefke) tıklanınca yan panelde ayrı ayrı gösterilecek. İlçe sınırları yok (kaynak vermiyor); bunu sahte sınır uydurarak kapatmıyoruz.
+- **Bilinen sınır:** 10m çözünürlük ve ~500 m basitleştirme: ülke ölçeğinde keskin, il sınırında yakınlaştırınca kaba görünebilir.
+
+## K-023: Arayüz iskeleti: React + TypeScript + Vite, harita için d3-geo
+- **Neden bu üçlü:** Önceki projeyle (seat-reservation-engine) aynı yığın; Vite hızlı geliştirme sunucusu ve basit derleme verir.
+- **Sürümler (şablonun getirdiği güncel):** React 19, Vite 8, TypeScript 6. `npm run build` başarılı (tarih: 2026-10-10).
+- **`d3-geo` neden:** Yalnızca GeoJSON'u SVG yoluna çeviren projeksiyon ve yol üretici kısmı (tüm D3 değil). Hazır harita kütüphanesi (Leaflet) yerine seçildi, çünkü "üzerine gelince ilin yükselmesi" etkisi SVG + CSS ile tam kontrolle yapılır ve altlık harita karosu (dış servis, limit, atıf) gerekmez. **Bedel:** yakınlaştırma/kaydırmayı gerekirse biz yazarız.
+- **Not:** Şablondaki demo içeriği (sayaç, örnek görseller) bir sonraki adımda gerçek içerikle değiştirilecek; bu commit yalnızca iskelet.
+
+## K-024: Harita arayüzü: SVG + d3-geo, hover'da yükselen kopya, yan panel
+- **Çizim:** `TurkeyMap.tsx` GeoJSON'u `d3-geo` (`geoMercator().fitExtent` + `geoPath`) ile SVG yoluna çevirir. 81 il + KKTC = 82 `<path>`. Projeksiyon yalnızca sınır verisi değişince hesaplanır (`useMemo`).
+- **Hover'da yükselme:** Üzerine gelinen ilin **kopyası** ayrı bir üst katmanda (`pointer-events: none`) çizilir; CSS ile yukarı kayar ve gölge alır. **Neden kopya:** Asıl yolu DOM'da öne taşımak, eleman fare altından kayınca `mouseleave/mouseenter` tetikleyip titreme (flicker) yapabilir. Kopya fare olaylarını almadığı için asıl yol yerinde kalır. `prefers-reduced-motion` ile animasyon kapanır.
+- **KKTC:** Haritada tek bölge (kaynak tek poligon, K-022). Rengi, ilçe anomalilerinin ortalaması (verisi olmayanlar hariç). Tıklayınca yan panel 6 ilçeyi listeler; bir ilçe seçilince o ilçenin tahmini gelir, "← KKTC" geri döner.
+- **Anomali renkleri:** 5 kova (mavi → gri → turuncu/kırmızı) + "veri yok" (nötr gri). Veri yok ile "normal (0)" ayrı renk; test korur. `anomaly.ts` saf fonksiyonlardan oluşur.
+- **Erişilebilirlik:** Her il `role="button"`, klavyeyle odaklanır, Enter/Boşluk ile seçilir; `aria-label` il adı ve sapmayı söyler.
+- **API'ye erişim:** Geliştirmede Vite vekili (`/api` → `127.0.0.1:5099`), CORS gerekmez. Canlıda `VITE_API_URL` (derleme zamanı) ve API'de `Cors__AllowedOrigins`.
+- **Yarış durumu:** `useApi` anahtar değişince önceki isteği iptal eder; hızlı art arda tıklamada eski yanıt yenisinin üstüne yazmaz.
+- **Sayı biçimi:** `toLocaleString` yerine elle (virgül, gerçek eksi işareti `−`), çünkü ICU/tarayıcı farkından bağımsız ve deterministik olmalı.
+- **Yeni paket gerekçesi:** `vitest` (Vite ile aynı yapılandırma, ek derleme adımı yok). `d3-geo` için bkz. K-023.
+- **Doğrulama (2026-10-10, gerçek API + gerçek veri, tarayıcıda):** 82 bölge çizildi; renk dağılımı: 10 bölge "veri yok" (normali henüz hesaplanamayan 9 il + KKTC). Hover başlığı, yükselen kopyanın oluşup silinmesi, tıklama, yan panel değerleri (Ankara 15,1° / normal 16,2° / sapma −1,1°, API ile birebir), KKTC → ilçe listesi → Girne → geri akışı ve klavyeyle seçim denendi. Coğrafi yerleşim sayısal olarak kontrol edildi (İstanbul batıda, Erzurum doğuda, KKTC Mersin'in güneybatısında).
+- **Doğrulanamayan:** Ekran görüntüsü alınamadığı için görünümü (renkler, gölge, yerleşim) gözle doğrulamadım. Mobil görünümü ve koyu modu denemedim. Bileşenler için otomatik test yok (yalnızca saf mantık testleri: 17 test).
+
+### K-021 ek notu (2026-10-10): API'nin yerel portu
+- API'nin `http` profili başta `launchSettings.json` şablonundaki rastgele porta (5129) bakıyordu; arayüzün Vite vekili (`vite.config.ts`) ise 5099'a gidiyordu. Kullanıcı kendi bilgisayarında çalıştırınca ikisi birbirini bulamadı (haritada "Veriler şu an alınamadı" görünecekti). Düzeltme: profilin portu 5099 yapıldı, `ASPNETCORE_URLS` ayarına gerek kalmadı. **Ders:** "benim makinemde çalışıyor" yetmez; yerel çalıştırma adımları temiz bir kullanıcıyla denenmeli (README'de adım adım yazılacak).
