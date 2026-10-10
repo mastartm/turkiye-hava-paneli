@@ -3,7 +3,7 @@
 Durum notları: tamamlanan işler `ARCHITECTURE.md`'de karar olarak, yapılacaklar burada.
 
 ## Bir sonraki oturum (öncelik sırasıyla)
-1. **Haritayı büyüt.** Kullanıcı geri bildirimi: harita, yan panelle yan yana olunca çok küçük kalıyor. Fikirler: harita sütununu genişlet / paneli daralt, yan paneli haritanın altına ya da üstüne açılan bir çekmeceye al, SVG yüksekliğini artır, KKTC için büyütülmüş küçük pencere (inset), isteğe bağlı yakınlaştırma. Görsel doğrulama için kullanıcıdan ekran görüntüsü iste (araç ekran görüntüsü alamadı).
+1. **Haritayı büyüt (yapıldı, görsel doğrulama bekliyor).** Sayfa 1560 px, yan panel 340 px sabit, harita kalan alanı kaplıyor. Kullanıcı geri bildirimi: harita, yan panelle yan yana olunca çok küçük kalıyor. Fikirler: harita sütununu genişlet / paneli daralt, yan paneli haritanın altına ya da üstüne açılan bir çekmeceye al, SVG yüksekliğini artır, KKTC için büyütülmüş küçük pencere (inset), isteğe bağlı yakınlaştırma. Görsel doğrulama için kullanıcıdan ekran görüntüsü iste (araç ekran görüntüsü alamadı).
 2. **İklim normallerini tamamla.** Yerel veritabanında normaller henüz yok (Open-Meteo saatlik limiti). `--normals` bir saat arayla tekrar çalıştırılır. Kalıcı çözüm: hesaplanmış normalleri küçük bir veri dosyası olarak repoya koy (87 şehir × 366 değer), toplayıcı ilk açılışta oradan yüklesin; böylece kimse 30 yıllık veriyi çekmek zorunda kalmaz.
 3. **Deprem katmanı** (haritada büyüklüğe göre daireler, açılıp kapanan). API ucu hazır (`/api/earthquakes`).
 4. **Geçmişle karşılaştırma** (kullanıcı sorusundan): bir şehir için "bu tarih son 10 yılda nasıldı?" grafiği.
