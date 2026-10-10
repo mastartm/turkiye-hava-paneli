@@ -31,11 +31,12 @@ a { color: var(--accent); }
 .error { color: #a32d2d; }
 @media (prefers-color-scheme: dark) { .error { color: #f09595; } }
 
-.app { max-width: 1200px; margin: 0 auto; padding: 16px; }
+.app { max-width: 1560px; margin: 0 auto; padding: 12px; }
 main { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin: 16px 0; }
-@media (min-width: 900px) { main { grid-template-columns: minmax(0, 1.8fr) minmax(280px, 1fr); } }
+@media (min-width: 900px) { main { grid-template-columns: minmax(0, 1fr) 340px; } }
 
 .map-card, .panel { background: var(--card); border: 0.5px solid var(--border); border-radius: 12px; padding: 12px; }
+.map-card { padding: 8px 8px 12px; }
 .panel { align-self: start; }
 .panel-empty { color: var(--muted); }
 
