@@ -56,3 +56,14 @@ C: Kıyıdaki depremler (Yunan adaları, Suriye sınırı) Türkiye'yi de etkile
 
 **S: USGS ne kadar veri döndürebilir?**
 C: Tek sorguda en fazla 20.000. Bu bölge ve kısa süre için yeterli. Çok uzun süre sorgularsam sayfalama gerekir; şimdilik yok.
+
+## Aşama 2: toplama mantığı
+
+**S: Bir şehir hata verirse ne olur?**
+C: Diğer şehirlere devam ederim ve hatayı sonuçta raporlarım. Kısmi veri, hiç veri olmamasından iyi. Toplayıcı hata varsa sıfırdan farklı kodla çıkar, böylece zamanlanmış işte görünür olur.
+
+**S: `DateTime.Now` yerine `TimeProvider` neden?**
+C: Zamanı dışarıdan verebilmek için. Testte sabit bir saat verip "son 7 gün" hesabını kesin olarak doğrulayabiliyorum.
+
+**S: İptal (CancellationToken) neden özel ele alındı?**
+C: Hataları yakalarken iptali de yakalarsam program durdurulamaz. Bu yüzden iptal istisnasını filtreyle dışarıda bırakıyorum.

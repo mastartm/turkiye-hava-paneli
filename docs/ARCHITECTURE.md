@@ -58,3 +58,10 @@ Her karar: **ne**, **neden**, **reddedilen alternatif**. Aşamalar ilerledikçe 
 - **Sınır:** USGS tek sorguda en fazla 20.000 sonuç döner. Bu bölge ve kısa süre için yeterli; çok uzun süre istenirse sayfalama gerekir (şimdilik yok).
 - **Doğrulanmayan:** Sağlayıcı kodunu gerçek USGS'ye karşı C# ile çalıştırmadım. Yanıt biçimini `curl` ile gerçek yanıttan doğruladım, testler o yanıtın kısaltılmışıyla yazıldı. İlk gerçek çağrı aşama 2'de veri toplayıcıyla olacak.
 - **USGS atıf/şart:** Resmi kullanım şartı sayfasını okumadım; arayüzde USGS'ye atıf göstereceğiz.
+
+## K-012: Toplama mantığı Application'da (`DataCollectionService`), saklama arayüzleri (`IWeatherStore`, `IEarthquakeStore`)
+- **Neden:** Servis dış kaynakları ve veritabanını yalnızca arayüzlerle bilir; sahtelerle hızlı test edilir. Toplayıcı program (K-013) bu servisi çağıran ince bir kabuk olur.
+- **Hata yönetimi:** Bir şehir ya da deprem kaynağı hata verirse diğerleri devam eder (kısmi veri, hiç veri olmamasından iyidir). Hatalar sonuçta listelenir, toplayıcı sıfırdan farklı çıkış koduyla bildirir.
+- **İptal istisnası yutulmaz:** `catch ... when (ex is not OperationCanceledException)`. Aksi halde program durdurulamazdı.
+- **Zaman `TimeProvider` ile:** `DateTime.Now` yerine enjekte edilen zaman; testte sabit saat verilir.
+- **Kibar istek hızı:** Şehirler arası kısa bekleme (ücretsiz API'ye nazik davranmak için).
