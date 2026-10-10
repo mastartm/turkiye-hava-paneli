@@ -147,3 +147,9 @@ Her karar: **ne**, **neden**, **reddedilen alternatif**. Aşamalar ilerledikçe 
 - **Çapraz doğrulama sonucu:** 81/81 il eşleşti. Tekirdağ koordinatı poligonun ~1,5 km dışında (Marmara kıyısı), yedek eşleme (tek eşleşmeyen il + tek eşleşmeyen şehir, < 5 km) ile bağlandı. Girne koordinatı KKTC poligonunun ≤3,4 km dışında (köşe uzaklığı, gerçeği olduğundan büyük gösterir); sorun değil.
 - **KKTC:** Natural Earth'te tek poligon (`Northern Cyprus`). Haritada **tek bölge** olarak çizilecek; 6 ilçe (Lefkoşa, Girne, Gazimağusa, Güzelyurt, İskele, Lefke) tıklanınca yan panelde ayrı ayrı gösterilecek. İlçe sınırları yok (kaynak vermiyor); bunu sahte sınır uydurarak kapatmıyoruz.
 - **Bilinen sınır:** 10m çözünürlük ve ~500 m basitleştirme: ülke ölçeğinde keskin, il sınırında yakınlaştırınca kaba görünebilir.
+
+## K-023: Arayüz iskeleti: React + TypeScript + Vite, harita için d3-geo
+- **Neden bu üçlü:** Önceki projeyle (seat-reservation-engine) aynı yığın; Vite hızlı geliştirme sunucusu ve basit derleme verir.
+- **Sürümler (şablonun getirdiği güncel):** React 19, Vite 8, TypeScript 6. `npm run build` başarılı (tarih: 2026-10-10).
+- **`d3-geo` neden:** Yalnızca GeoJSON'u SVG yoluna çeviren projeksiyon ve yol üretici kısmı (tüm D3 değil). Hazır harita kütüphanesi (Leaflet) yerine seçildi, çünkü "üzerine gelince ilin yükselmesi" etkisi SVG + CSS ile tam kontrolle yapılır ve altlık harita karosu (dış servis, limit, atıf) gerekmez. **Bedel:** yakınlaştırma/kaydırmayı gerekirse biz yazarız.
+- **Not:** Şablondaki demo içeriği (sayaç, örnek görseller) bir sonraki adımda gerçek içerikle değiştirilecek; bu commit yalnızca iskelet.
