@@ -198,3 +198,20 @@ C: Kaynak veri KKTC'yi tek poligon veriyor, ben de tek bölge çizdim ve rengini
 
 **S: Arayüzü nasıl doğruladın, neyi doğrulayamadın?**
 C: Gerçek API ve gerçek veriyle tarayıcıda hover, tıklama, KKTC akışı ve klavye seçimini denedim, yan panel değerlerini API ile karşılaştırdım. Ekran görüntüsü alamadığım için görsel görünümü gözle doğrulamadım; onu açıkça not ettim.
+
+## Aşama 5a: normaller dosyası
+
+**S: Neden hesaplanmış normalleri repoya koydun?**
+C: 30 yıllık veri bir API'nin ağırlık limitine takılıyor, her kurulum 8 dakika sürüyor ve bazen iki ayrı çalıştırma istiyor. Normal değişmeyen bir veri, bir kez hesaplayıp küçük bir dosya olarak tutuyorum. Yeni kurulum dosyadan yükleniyor, API'ye hiç gitmiyor.
+
+**S: Dosyayı neden şehir adıyla değil slug ile anahtarladın?**
+C: Slug ASCII ve sabit. Adlarda Türkçe karakter ve yazım farkı riski var (İ/I gibi). Slug kimliği zaten API ve harita da kullanıyor.
+
+**S: Eksik şehirli dosya yazılsaydı ne olurdu?**
+C: Sonradan yüklenince bazı iller sessizce renksiz kalırdı. Bu yüzden dışa aktarma, veritabanında eksik şehir varsa dosyayı hiç yazmıyor ve hata veriyor.
+
+**S: Dosya yazarken elektrik/çökme olursa?**
+C: Önce geçici dosyaya yazıp tamamlanınca yerine taşıyorum; yarıda kesilirse eski dosya bozulmuyor.
+
+**S: Bunu nasıl test ettin?**
+C: Biçim için birim testleri (yuvarlama, sıralama, Türkçe kültür, geçersiz dosyalar) ve gerçek PostgreSQL'le "A veritabanı → dosya → boş B veritabanı" testi.
