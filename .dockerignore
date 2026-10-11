@@ -1,0 +1,16 @@
+# Derleme bağlamına girmeyecekler: gizli bilgiler, derleme çıktıları, bağımlılık klasörleri.
+.git
+.github
+.env
+.env.*
+!.env.example
+
+**/bin
+**/obj
+**/node_modules
+web/dist
+tests
+docs
+*.md
+.vs
+.idea
