@@ -24,6 +24,18 @@ public sealed class ForecastRow
     public DateTimeOffset FetchedAt { get; set; }
 }
 
+/// <summary>Şehrin şu anki durumu; şehir başına tek satır, her çekişte üzerine yazılır.</summary>
+public sealed class CurrentWeatherRow
+{
+    public int CityId { get; set; }
+    public DateTimeOffset ObservedAt { get; set; }
+    public double? TemperatureC { get; set; }
+    public int? WeatherCode { get; set; }
+    public double? PrecipitationMm { get; set; }
+    /// <summary>Verinin bizim tarafımızdan çekildiği an ("veri ne kadar eski" bilgisi).</summary>
+    public DateTimeOffset FetchedAt { get; set; }
+}
+
 public sealed class EarthquakeRow
 {
     public string Id { get; set; } = "";
@@ -44,6 +56,7 @@ public sealed class ClimateNormalRow
 
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
+    public DbSet<CurrentWeatherRow> CurrentWeather => Set<CurrentWeatherRow>();
     public DbSet<ClimateNormalRow> ClimateNormals => Set<ClimateNormalRow>();
     public DbSet<CityRow> Cities => Set<CityRow>();
     public DbSet<ForecastRow> Forecasts => Set<ForecastRow>();
@@ -65,6 +78,13 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             e.ToTable("daily_forecasts");
             // Bileşik anahtar: bir şehrin bir günü için tek tahmin. Yenisi gelince üzerine yazılır.
             e.HasKey(x => new { x.CityId, x.Date });
+            e.HasOne<CityRow>().WithMany().HasForeignKey(x => x.CityId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<CurrentWeatherRow>(e =>
+        {
+            e.ToTable("current_weather");
+            e.HasKey(x => x.CityId); // şehir başına tek satır
             e.HasOne<CityRow>().WithMany().HasForeignKey(x => x.CityId).OnDelete(DeleteBehavior.Cascade);
         });
 

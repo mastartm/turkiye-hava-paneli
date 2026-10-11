@@ -40,6 +40,28 @@ public sealed class EfWeatherStore(IDbContextFactory<AppDbContext> factory) : IW
     }
 }
 
+public sealed class EfCurrentWeatherStore(IDbContextFactory<AppDbContext> factory) : ICurrentWeatherStore
+{
+    public async Task UpsertCurrentAsync(City city, CurrentObservation current, DateTimeOffset fetchedAt, CancellationToken ct = default)
+    {
+        await using var db = await factory.CreateDbContextAsync(ct);
+
+        var cityRow = await CityRows.GetOrCreateAsync(db, city, ct);
+        var row = await db.CurrentWeather.SingleOrDefaultAsync(r => r.CityId == cityRow.Id, ct);
+        if (row is null)
+        {
+            row = new CurrentWeatherRow { CityId = cityRow.Id };
+            db.CurrentWeather.Add(row);
+        }
+        row.ObservedAt = current.ObservedAt.ToUniversalTime();
+        row.TemperatureC = current.TemperatureC;
+        row.WeatherCode = current.WeatherCode;
+        row.PrecipitationMm = current.PrecipitationMm;
+        row.FetchedAt = fetchedAt.ToUniversalTime();
+        await db.SaveChangesAsync(ct);
+    }
+}
+
 public sealed class EfEarthquakeStore(IDbContextFactory<AppDbContext> factory) : IEarthquakeStore
 {
     public async Task<int> UpsertAsync(IReadOnlyList<Earthquake> earthquakes, CancellationToken ct = default)

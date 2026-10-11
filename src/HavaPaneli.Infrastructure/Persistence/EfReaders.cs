@@ -35,6 +35,19 @@ public sealed class EfForecastReader(IDbContextFactory<AppDbContext> factory) : 
         return rows.ToDictionary(x => x.Name, x => ToDomain(x.Forecast));
     }
 
+    public async Task<StoredCurrent?> GetCurrentAsync(string cityName, CancellationToken ct = default)
+    {
+        await using var db = await factory.CreateDbContextAsync(ct);
+
+        var row = await db.CurrentWeather.AsNoTracking()
+            .Where(r => db.Cities.Any(c => c.Id == r.CityId && c.Name == cityName))
+            .SingleOrDefaultAsync(ct);
+
+        return row is null
+            ? null
+            : new StoredCurrent(new CurrentObservation(row.ObservedAt, row.TemperatureC, row.WeatherCode, row.PrecipitationMm), row.FetchedAt);
+    }
+
     private static DailyForecast ToDomain(ForecastRow r) =>
         new(r.Date, r.MinTemperatureC, r.MaxTemperatureC, r.MeanTemperatureC, r.PrecipitationMm, r.WeatherCode);
 }

@@ -12,11 +12,12 @@ public class DataCollectionServiceTests
     private sealed class FakeWeather(Func<City, IReadOnlyList<DailyForecast>> onCall) : IWeatherProvider
     {
         public List<string> Calls { get; } = [];
+        public CurrentObservation? Current { get; set; }
 
-        public Task<IReadOnlyList<DailyForecast>> GetForecastAsync(City city, int days, CancellationToken ct = default)
+        public Task<WeatherSnapshot> GetSnapshotAsync(City city, int days, CancellationToken ct = default)
         {
             Calls.Add($"{city.Name}:{days}");
-            return Task.FromResult(onCall(city));
+            return Task.FromResult(new WeatherSnapshot(onCall(city), Current));
         }
     }
 
@@ -45,6 +46,17 @@ public class DataCollectionServiceTests
         }
     }
 
+    private sealed class FakeCurrentStore : ICurrentWeatherStore
+    {
+        public List<(string City, CurrentObservation Current, DateTimeOffset At)> Saved { get; } = [];
+
+        public Task UpsertCurrentAsync(City city, CurrentObservation current, DateTimeOffset fetchedAt, CancellationToken ct = default)
+        {
+            Saved.Add((city.Name, current, fetchedAt));
+            return Task.CompletedTask;
+        }
+    }
+
     private sealed class FakeQuakeStore : IEarthquakeStore
     {
         public int Received { get; private set; }
@@ -69,8 +81,8 @@ public class DataCollectionServiceTests
 
     private static DataCollectionService Create(
         IReadOnlyList<City> cities, FakeWeather weather, FakeQuakes quakes,
-        FakeWeatherStore ws, FakeQuakeStore qs) =>
-        new(cities, weather, quakes, ws, qs, new FixedTime(Now), TimeSpan.Zero);
+        FakeWeatherStore ws, FakeQuakeStore qs, FakeCurrentStore? cs = null) =>
+        new(cities, weather, quakes, ws, cs ?? new FakeCurrentStore(), qs, new FixedTime(Now), TimeSpan.Zero);
 
     [Fact]
     public async Task Tum_Sehirler_Ve_Depremler_Saklanir()
@@ -134,6 +146,36 @@ public class DataCollectionServiceTests
         Assert.Equal(GeoBounds.TurkiyeAndKktc, quakes.LastBounds);
         Assert.Equal(Now - DataCollectionService.EarthquakeWindow, quakes.LastSince);
         Assert.Equal(DataCollectionService.MinEarthquakeMagnitude, quakes.LastMinMagnitude);
+    }
+
+    private static readonly CurrentObservation SampleCurrent = new(new DateTimeOffset(2026, 10, 10, 15, 0, 0, TimeSpan.FromHours(3)), 28.4, 2, 0);
+
+    [Fact]
+    public async Task Su_Anki_Durum_Saklanir_Ve_Cekilme_Zamani_Yazilir()
+    {
+        var weather = new FakeWeather(_ => [Day(10)]) { Current = SampleCurrent };
+        var cs = new FakeCurrentStore();
+
+        await Create([Ankara, Izmir], weather, new FakeQuakes(() => []), new FakeWeatherStore(), new FakeQuakeStore(), cs).RunAsync();
+
+        Assert.Equal(2, cs.Saved.Count);
+        Assert.All(cs.Saved, s => Assert.Equal(Now, s.At)); // verinin ne zaman çekildiği (bayatlık bilgisi)
+        Assert.Equal(28.4, cs.Saved[0].Current.TemperatureC);
+    }
+
+    [Fact]
+    public async Task Su_Anki_Durum_Yoksa_Gunluk_Tahmin_Yine_Saklanir_Ve_Hata_Sayilmaz()
+    {
+        var weather = new FakeWeather(_ => [Day(10)]) { Current = null };
+        var ws = new FakeWeatherStore();
+        var cs = new FakeCurrentStore();
+
+        var result = await Create([Ankara], weather, new FakeQuakes(() => []), ws, new FakeQuakeStore(), cs).RunAsync();
+
+        Assert.Equal(1, result.CitiesSucceeded);
+        Assert.False(result.HasFailures);
+        Assert.Single(ws.Saved);
+        Assert.Empty(cs.Saved);
     }
 
     [Fact]
