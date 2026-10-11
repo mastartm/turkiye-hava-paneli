@@ -36,9 +36,21 @@ export interface DayDto {
   anomalyC: number | null
 }
 
+/** Şu anki durum (Open-Meteo `current`, ~15 dk'da bir). Günlük ortalamadan ayrı bir değerdir. */
+export interface CurrentDto {
+  observedAt: string
+  temperatureC: number | null
+  weatherCode: number | null
+  precipitationMm: number | null
+}
+
 export interface CityForecastDto {
   city: CityDto
   days: DayDto[]
+  /** Hiç çekilmediyse null. */
+  current: CurrentDto | null
+  /** Verinin bizim tarafımızdan en son çekildiği an (ISO, UTC); "veri ne kadar eski" göstermek için. */
+  updatedAt: string | null
 }
 
 export interface SourceDto {
