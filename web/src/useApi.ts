@@ -8,12 +8,18 @@ export interface ApiState<T> {
 
 /**
  * Bir API çağrısını yürütür. `key` değişince önceki istek iptal edilir (hızlı art arda tıklamada
- * eski yanıtın yenisinin üstüne yazmaması için), yenisi başlar.
+ * eski yanıtın yenisinin üstüne yazmaması için), yenisi başlar. `key` null ise hiçbir şey çekilmez
+ * (örn. katman kapalı) ve durum "yüklenmiyor, veri yok" olur.
  */
-export function useApi<T>(load: (signal: AbortSignal) => Promise<T>, key: string): ApiState<T> {
-  const [state, setState] = useState<ApiState<T>>({ data: null, error: null, loading: true })
+export function useApi<T>(load: (signal: AbortSignal) => Promise<T>, key: string | null): ApiState<T> {
+  const [state, setState] = useState<ApiState<T>>({ data: null, error: null, loading: key !== null })
 
   useEffect(() => {
+    if (key === null) {
+      setState({ data: null, error: null, loading: false })
+      return
+    }
+
     const controller = new AbortController()
     setState({ data: null, error: null, loading: true })
 

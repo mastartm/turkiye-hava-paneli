@@ -23,7 +23,8 @@ public sealed class DataCollectionService
 {
     public const int ForecastDays = 7;
     public const double MinEarthquakeMagnitude = 2.5;
-    public static readonly TimeSpan EarthquakeWindow = TimeSpan.FromDays(7);
+    // API arayüze 30 güne kadar sorgu izin verir (EarthquakeQueryService.MaxDays); toplayıcı da o kadar geriye çeker, yoksa "son 30 gün" boş kalırdı.
+    public static readonly TimeSpan EarthquakeWindow = TimeSpan.FromDays(30);
 
     private readonly IReadOnlyList<City> _cities;
     private readonly IWeatherProvider _weather;

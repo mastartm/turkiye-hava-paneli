@@ -215,3 +215,20 @@ C: Önce geçici dosyaya yazıp tamamlanınca yerine taşıyorum; yarıda kesili
 
 **S: Bunu nasıl test ettin?**
 C: Biçim için birim testleri (yuvarlama, sıralama, Türkçe kültür, geçersiz dosyalar) ve gerçek PostgreSQL'le "A veritabanı → dosya → boş B veritabanı" testi.
+
+## Aşama 6: deprem katmanı
+
+**S: Deprem dairelerinin boyutunu nasıl belirledin?**
+C: Yarıçap büyüklükle doğrusal artıyor ve alt/üst sınırla kırpılıyor. Küçük depremler görünür kalıyor, çok büyük bir deprem haritayı kaplamıyor. Büyükten küçüğe çiziyorum ki küçük daire büyüğün altında kalıp tıklanamaz olmasın.
+
+**S: Çerçevenin dışına düşen depremleri ne yaptın?**
+C: Koordinat kutum komşu bölgeleri de kapsıyor. Haritanın dışına düşenleri çizmiyorum ama saklamıyorum da gizlemiyorum: haritanın altında "N deprem çerçevenin dışında kaldı" yazıyor.
+
+**S: Katman kapalıyken API'ye istek gidiyor mu?**
+C: Hayır. Veri çeken kancama anahtar olarak `null` verince hiçbir şey çekmiyor. Ayarlar değişince de önceki istek iptal ediliyor.
+
+**S: Gerçek veriyle denerken ne buldun?**
+C: "Son 30 gün" seçeneği yalnızca 7 günlük veri döndürüyordu, çünkü toplayıcı 7 gün çekiyordu. API ile toplayıcının aynı pencereyi kullanması gerektiğini fark edip toplayıcıyı 30 güne çıkardım.
+
+**S: Neden depremler İngilizce yer adıyla?**
+C: USGS metni olduğu gibi geliyor ("21 km ESE of Feke, Turkey"). Çevirmek bozuk çıktı riski taşırdı; ham veriyi göstermek ve kaynağı belirtmek daha dürüst.
