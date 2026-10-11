@@ -258,3 +258,16 @@ _(Numara eklenme sırasını gösterir; bu bölüm K-028'den önce durur.)_
 - **`npm ci`:** `package-lock.json`'a birebir uyar, uymuyorsa hata verir.
 - **Aynı dalda yeni push eski koşuyu iptal eder** (`concurrency`); izinler minimum (`contents: read`).
 - **Doğrulanamayan:** Dosya yerelde çalıştırılamaz ve bu makinede YAML ayrıştırıcı yoktu (yeni paket indirilmedi). **İlk gerçek doğrulama GitHub'daki ilk koşu olacak.** Docker iş adımındaki parola yalnızca compose'un zorunlu değişken denetimi için, sahte ve hiçbir yere bağlanmıyor.
+
+## K-032: `postgresql://` biçimindeki bağlantı dizesi olduğu gibi kabul edilir (Neon, Render)
+- **Sorun (kullanıcının takıldığı yer):** Barındırma servisleri (Neon, Render, Heroku) bağlantıyı `postgresql://kullanici:parola@host/veritabani?sslmode=require` biçiminde verir; Npgsql ise `Host=...;Database=...;Username=...;Password=...` biçimini okur. İlk planda kullanıcıdan bu çeviriyi **elle** yapması isteniyordu: hataya açık, sıkıcı ve yanlış yapılırsa parola sızabiliyordu (kullanıcı çevirmek yerine gerçek dizeyi sohbete yapıştırdı). Bu bizim tasarım eksiğimizdi.
+- **Çözüm:** `ConnectionStringNormalizer.Normalize` (Infrastructure). URI biçimini Npgsql biçimine çevirir; zaten anahtar=değer biçimindeyse dokunmaz. Toplayıcı ve API aynı fonksiyonu kullanır; böylece Neon'un verdiği dize olduğu gibi yapıştırılır.
+- **Güvenlik kararları:**
+  - Parola yüzde-kodludur (`p%40ss`); çevirirken çözülür ve Npgsql'in kendi oluşturucusu doğru tırnaklar (`;`, `=`, `#` gibi karakterli parolalar testle doğrulandı).
+  - **Tanınmayan `sslmode` hata verir**, sessizce varsayılana düşmez: sessiz düşüş şifresiz bağlantıya yol açabilirdi. `require`, `verify-ca`, `verify-full`, `prefer`, `allow`, `disable` tanınır.
+  - **Hata mesajları parolayı ve dizeyi içermez** (loglara sızmasın); testle korunur.
+  - Diğer sorgu anahtarları (`channel_binding` vb.) yok sayılır. Bedel: `channel_binding=require` ek kimlik doğrulama sertleştirmesi uygulanmaz; TLS (`sslmode=require`) yine zorunlu.
+  - Yapıştırırken dize başına/sonuna eklenen boşluk ve satır sonu temizlenir (parolaya yapışmasın).
+- **Bağlantı dizesi terminale nasıl verilir:** `$env:ConnectionStrings__Default = Read-Host "..."` (PowerShell). Dize komut satırına yazılmadığı için komut geçmişinde (PSReadLine) parola kalmaz.
+- **Doğrulama (2026-10-12):** 23 birim test (biçim eşleme, özel karakterli parola, her `sslmode` değeri, bozuk girdi, parola sızıntısı yok). **Gerçek Neon veritabanına** (Frankfurt, ücretsiz plan) Neon'un verdiği dizeyle olduğu gibi bağlanıldı: `--import-normals` ile şema kuruldu ve 87 şehrin normali yüklendi. API tarafı aynı fonksiyonu kullanır (birim testli) ama API'nin Neon'a bağlanması henüz denenmedi.
+- **Çıkan ders:** Kullanıcı gerçek parolayı iki kez sohbete yapıştırdı ve ikisi de yenilendi. Gizli bilgiyi "sohbete yazma" demek yetmiyor; **kullanıcının yapabileceği en kolay yolu** sunmak gerekiyor (yapıştır, çevirme). Terminal soruları (`Read-Host`) bunu sağlar.

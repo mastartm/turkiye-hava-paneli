@@ -312,3 +312,20 @@ C: Geliştirme makinemde .NET 10 SDK'sı var ama proje net8.0 hedefliyor. CI'da 
 
 **S: Ölçüm tablosuna ne kadar güvenilir?**
 C: Tek makinede, Docker Desktop üzerinde, nginx üzerinden ölçtüm; mutlak değil göreli fikir verir. Eş zamanlı ölçüm kısa (her uç için bir saniyenin altı), yük testi değil, bunu README'de açıkça yazdım. En yavaş uç `/api/map`: her istekte 87 şehrin normalini okuyor; normal değişmediği için önbelleğe alınabilir.
+
+## Neon bağlantı dizesi
+
+**S: Neon'un verdiği bağlantı dizesi neden doğrudan çalışmadı?**
+C: Neon `postgresql://kullanici:parola@host/db?sslmode=require` biçimini veriyor, Npgsql ise `Host=...;Database=...` biçimini okuyor. Elle çevirmek yerine bir yardımcı yazdım: URI'yi okuyup Npgsql biçimine çeviriyor. Ayrıca özel karakterli parolalarda hata yapma riskini ortadan kaldırıyor.
+
+**S: Parolada `;` ya da `@` olursa?**
+C: URI'de parola yüzde-kodlu gelir, ben çözüyorum; çıktıyı Npgsql'in kendi oluşturucusuna veriyorum, o doğru tırnaklıyor. Testte `p@ss;w=rd#1` parolasının çevirmeden sonra aynen geri okunduğunu doğruluyorum.
+
+**S: Tanınmayan bir `sslmode` gelirse ne yapıyorsun?**
+C: Hata veriyorum, sessizce varsayılana düşmüyorum. Sessiz düşüş şifresiz bir bağlantıya yol açabilirdi; güvenlik ayarında "bilmiyorum, o zaman gevşek olsun" yapılmaz.
+
+**S: Hata mesajında bağlantı dizesi görünürse?**
+C: Görünmüyor, mesajlar bilerek genel yazılmış (testle korunuyor). Hatalar loglara düşer ve loglar parola taşıyabilir.
+
+**S: Gizli bilgileri nasıl yönettiniz?**
+C: Parola repoda ve sohbette yok. Yerelde `.env` (git'e girmez), terminalde `Read-Host` ile (komut geçmişine yazılmaz), canlıda barındırma servisinin ortam değişkenlerinde. Bir keresinde gerçek parola yanlışlıkla sohbete yapıştırıldı; hemen Neon'da yenilendi. Bunun nedeni çeviri adımının zor olmasıydı, bu yüzden programı dizeyi olduğu gibi kabul edecek şekilde değiştirdim.
