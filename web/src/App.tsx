@@ -95,7 +95,10 @@ export default function App() {
             ))}
             <li><span className="swatch" style={{ background: NO_DATA_COLOR }} />veri yok</li>
             {quakeSettings.enabled && (
-              <li><span className="swatch swatch-quake" />deprem (daire boyutu: büyüklük)</li>
+              <>
+                <li><span className="swatch swatch-quake" />deprem (daire boyutu: büyüklük)</li>
+                <li><span className="swatch swatch-cluster" />iç içe depremler (tıklayınca yayılır)</li>
+              </>
             )}
           </ul>
         </section>

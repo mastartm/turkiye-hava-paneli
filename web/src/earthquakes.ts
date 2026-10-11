@@ -58,17 +58,6 @@ export interface PlacedQuake {
   r: number
 }
 
-/**
- * Verilen dairenin üst üste bindiği (merkezler arası uzaklık < yarıçaplar toplamı) tüm depremler,
- * kendisi dahil ve ilk sırada; geri kalanlar büyüklüğe göre büyükten küçüğe.
- */
-export function overlappingWith(target: PlacedQuake, all: readonly PlacedQuake[]): PlacedQuake[] {
-  const others = all
-    .filter((p) => p.quake.id !== target.quake.id && Math.hypot(p.x - target.x, p.y - target.y) < p.r + target.r)
-    .sort((a, b) => b.quake.magnitude - a.quake.magnitude)
-  return [target, ...others]
-}
-
 /** USGS "21 km ESE of Feke, Turkey" metninin ayrıştırılmış hali; ayrıştırılamazsa null. */
 export interface ParsedPlace {
   distanceKm: number

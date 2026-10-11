@@ -6,50 +6,11 @@ import {
   cardFits,
   cardMinHeight,
   directionName,
-  overlappingWith,
   parsePlace,
   placeCard,
-  type PlacedQuake,
 } from './earthquakes'
 import { inGeometry, regionNameAt } from './location'
 import type { RegionProps } from './TurkeyMap'
-
-function placed(id: string, x: number, y: number, r: number, magnitude = 3): PlacedQuake {
-  return { quake: { id, occurredAt: '2026-10-06T23:50:00Z', magnitude, place: 'X', latitude: 0, longitude: 0, depthKm: 5 }, x, y, r }
-}
-
-describe('overlappingWith', () => {
-  it('üst üste binen daireleri bulur; hedef her zaman ilk', () => {
-    const a = placed('a', 100, 100, 10)
-    const b = placed('b', 112, 100, 10, 5) // uzaklık 12 < 20: biniyor
-    const c = placed('c', 300, 300, 10)    // uzak
-
-    const result = overlappingWith(a, [a, b, c])
-
-    expect(result.map((p) => p.quake.id)).toEqual(['a', 'b'])
-  })
-
-  it('komşuları büyüklüğe göre büyükten küçüğe sıralar', () => {
-    const a = placed('a', 100, 100, 10, 2.6)
-    const small = placed('s', 105, 100, 5, 3)
-    const big = placed('b', 95, 100, 8, 5)
-
-    expect(overlappingWith(a, [a, small, big]).map((p) => p.quake.id)).toEqual(['a', 'b', 's'])
-  })
-
-  it('yalnızca değen/binen daireler: uzaklık tam yarıçaplar toplamına eşitse sayılmaz', () => {
-    const a = placed('a', 0, 0, 10)
-    const touching = placed('b', 20, 0, 10) // tam 20 = 10 + 10: üst üste değil, sadece değiyor
-
-    expect(overlappingWith(a, [a, touching])).toHaveLength(1)
-  })
-
-  it('tek başına olan deprem yalnızca kendisini döner', () => {
-    const a = placed('a', 0, 0, 5)
-
-    expect(overlappingWith(a, [a]).map((p) => p.quake.id)).toEqual(['a'])
-  })
-})
 
 describe('parsePlace / directionName', () => {
   it('USGS yer metnini ayrıştırır', () => {

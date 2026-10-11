@@ -1,6 +1,6 @@
+import { leaderStart } from './clusters'
 import {
   CARD_WIDTH,
-  MAX_LISTED,
   cardFits,
   cardMinHeight,
   directionName,
@@ -9,49 +9,63 @@ import {
   formatWhen,
   parsePlace,
   placeCard,
+  type CardPlacement,
   type PlacedQuake,
 } from './earthquakes'
 
+export interface CardContainer {
+  width: number
+  height: number
+}
+
+/** Kartın ve kılavuz çizgisinin ortak yerleşimi: dairenin kenarından kartın kenarına. */
+export function QuakeLeader({
+  container,
+  from,
+  place,
+  radius,
+}: {
+  container: CardContainer
+  from: { x: number; y: number }
+  place: CardPlacement
+  radius: number
+}) {
+  const start = leaderStart(from, radius, { x: place.anchorX, y: place.anchorY })
+  return (
+    <svg className="quake-leader" width={container.width} height={container.height} aria-hidden="true">
+      <line x1={start.x} y1={start.y} x2={place.anchorX} y2={place.anchorY} />
+      <circle cx={place.anchorX} cy={place.anchorY} r={3} />
+    </svg>
+  )
+}
+
 interface Props {
-  /** İlk eleman fare altındaki deprem; geri kalanı onunla üst üste binenler. */
-  group: readonly PlacedQuake[]
+  placed: PlacedQuake
   /** Depremin içinde bulunduğu il ("KKTC" dahil); deniz/komşu ülkedeyse null. */
   regionName: string | null
   /** Harita kabının piksel boyutu ve ölçeği (kap genişliği / SVG viewBox genişliği). */
-  container: { width: number; height: number }
+  container: CardContainer
   scale: number
 }
 
 const fmtKm = (km: number) => String(km).replace('.', ',')
 
-/** Daireye gelince açılan ayrıntı kartı ve dairenin kenarından karta uzanan kılavuz çizgisi. */
-export function QuakeCard({ group, regionName, container, scale }: Props) {
-  const main = group[0]
-  if (!main || container.width === 0) return null
+/** Tek bir depreme gelince açılan ayrıntı kartı ve dairenin kenarından karta uzanan kılavuz çizgisi. */
+export function QuakeCard({ placed, regionName, container, scale }: Props) {
+  if (container.width === 0) return null
 
-  const q = main.quake
-  const point = { x: main.x * scale, y: main.y * scale }
-  const radius = main.r * scale
-  const minHeight = cardMinHeight(group.length)
+  const q = placed.quake
+  const point = { x: placed.x * scale, y: placed.y * scale }
+  const radius = placed.r * scale
+  const minHeight = cardMinHeight(1)
   if (!cardFits(container, { width: CARD_WIDTH, height: minHeight })) return null
   const place = placeCard(point, radius, container, { width: CARD_WIDTH, height: minHeight })
 
-  // Çizgi dairenin merkezinden değil kenarından başlar: daireyi kesmesin.
-  const dx = place.anchorX - point.x
-  const dy = place.anchorY - point.y
-  const length = Math.hypot(dx, dy) || 1
-  const start = { x: point.x + (dx / length) * radius, y: point.y + (dy / length) * radius }
-
   const parsed = parsePlace(q.place)
-  const rest = group.slice(1)
-  const listed = rest.slice(0, MAX_LISTED)
 
   return (
     <>
-      <svg className="quake-leader" width={container.width} height={container.height} aria-hidden="true">
-        <line x1={start.x} y1={start.y} x2={place.anchorX} y2={place.anchorY} />
-        <circle cx={place.anchorX} cy={place.anchorY} r={3} />
-      </svg>
+      <QuakeLeader container={container} from={point} place={place} radius={radius} />
 
       <div className="quake-card" role="tooltip" style={{ left: place.left, top: place.top, width: CARD_WIDTH, minHeight }}>
         <div className="qc-head">
@@ -74,20 +88,6 @@ export function QuakeCard({ group, regionName, container, scale }: Props) {
           <dt>Konum</dt>
           <dd>{q.latitude.toFixed(2).replace('.', ',')}° K, {q.longitude.toFixed(2).replace('.', ',')}° D</dd>
         </dl>
-
-        {rest.length > 0 && (
-          <div className="qc-group">
-            <p>Bu noktada {group.length} deprem iç içe:</p>
-            <ul>
-              {listed.map((p) => (
-                <li key={p.quake.id}>
-                  <strong>M {formatMagnitude(p.quake.magnitude)}</strong> {formatWhen(p.quake.occurredAt)}
-                </li>
-              ))}
-              {rest.length > MAX_LISTED && <li className="muted">+{rest.length - MAX_LISTED} daha</li>}
-            </ul>
-          </div>
-        )}
       </div>
     </>
   )
