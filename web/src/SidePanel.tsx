@@ -1,6 +1,7 @@
 import { colorFor, formatAnomaly, formatC } from './anomaly'
 import { fetchForecast } from './api'
-import { KKTC_REGION_ID, type DayDto, type MapPointDto } from './types'
+import { formatDepth, formatMagnitude, formatWhen } from './earthquakes'
+import { KKTC_REGION_ID, type DayDto, type EarthquakeDto, type MapPointDto } from './types'
 import { useApi } from './useApi'
 import { shortDay, weatherLabel } from './weather'
 
@@ -16,9 +17,33 @@ interface Props {
   points: readonly MapPointDto[]
   onSelectCity: (cityId: string) => void
   onBackToRegion: () => void
+  /** Seçili deprem varsa panel onu gösterir; kapatınca önceki il seçimine dönülür. */
+  quake: EarthquakeDto | null
+  onCloseQuake: () => void
 }
 
-export function SidePanel({ selection, points, onSelectCity, onBackToRegion }: Props) {
+export function SidePanel({ selection, points, onSelectCity, onBackToRegion, quake, onCloseQuake }: Props) {
+  if (quake) {
+    return (
+      <aside className="panel">
+        <button type="button" className="back" onClick={onCloseQuake}>
+          ← Kapat
+        </button>
+        <h2>Deprem · M {formatMagnitude(quake.magnitude)}</h2>
+        <p className="muted">{quake.place}</p>
+        <dl className="quake-facts">
+          <dt>Zaman</dt>
+          <dd>{formatWhen(quake.occurredAt)} (Türkiye saati)</dd>
+          <dt>Derinlik</dt>
+          <dd>{formatDepth(quake.depthKm)}</dd>
+          <dt>Konum</dt>
+          <dd>{quake.latitude.toFixed(2).replace('.', ',')}° K, {quake.longitude.toFixed(2).replace('.', ',')}° D</dd>
+        </dl>
+        <p className="muted">Kaynak: USGS. Küçük depremler eksik olabilir; resmi kayıt için AFAD ve Kandilli'ye bakın.</p>
+      </aside>
+    )
+  }
+
   if (!selection) {
     return (
       <aside className="panel panel-empty">

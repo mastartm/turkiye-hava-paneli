@@ -84,3 +84,20 @@ svg { width: 100%; height: auto; display: block; }
 .chip { padding: 1px 8px; border-radius: 10px; color: #1f1f1d; font-size: 0.85rem; font-variant-numeric: tabular-nums; }
 
 footer { font-size: 0.8rem; padding-bottom: 16px; }
+.swatch-quake { background: #7f77dd; opacity: 0.7; border-radius: 50%; border: 1px solid #3c3489; }
+
+/* Deprem katmanı */
+.quake-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 4px 6px 8px; font-size: 0.9rem; }
+.quake-controls select { font: inherit; padding: 2px 4px; }
+.toggle { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; }
+.quake-status { font-size: 0.85rem; }
+
+.quake { fill: #7f77dd; fill-opacity: 0.55; stroke: #3c3489; stroke-width: 1; cursor: pointer; outline: none; }
+.quake:hover, .quake:focus-visible { fill-opacity: 0.85; stroke-width: 2; }
+.quake.selected { fill-opacity: 0.9; stroke: var(--text); stroke-width: 2.5; }
+@media (prefers-color-scheme: dark) { .quake { stroke: #cecbf6; } }
+
+.map-note { font-size: 0.8rem; margin: 4px 6px 0; }
+.quake-facts { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 12px 0; }
+.quake-facts dt { color: var(--muted); }
+.quake-facts dd { margin: 0; }
