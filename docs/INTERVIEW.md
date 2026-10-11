@@ -250,6 +250,26 @@ C: Telefon genişliğinde harita 350x160 piksel, kart ise 270x270+ piksel olduğ
 **S: Kart fareyi neden engellemiyor?**
 C: `pointer-events: none`. Kart faredeki daireyi örtüp hover'ı bozarsa titreme olur; kart yalnızca bilgi gösteriyor, etkileşimli değil.
 
+## Düzeltme: "şu an" ile "günlük ortalama"
+
+**S: Kullanıcı "Şanlıurfa'da sağanak yazıyor ama güneşli" dedi. Ne oldu?**
+C: İki etiketleme hatası. Open-Meteo'nun günlük hava kodu günün en kötü saatinin kodudur: o gün sadece 11:00'de 0,2 mm'lik kısa bir sağanak vardı ve tüm gün "sağanak" yazıyordu. Ayrıca 80/81/82 kodlarının hepsi aynı etiketle gösteriliyordu. Düzeltme: her kod kendi adını taşıyor ve yağış 1 mm'nin altındaysa "gün içinde kısa süreli hafif sağanak (0,4 mm)" yazıyor.
+
+**S: Ekranda 22 derece yazıyordu ama gerçek 27-28 derece, neden?**
+C: "Bugün" etiketi günlük **ortalamayı** gösteriyordu (gece serinliği dahil), anlık sıcaklığı değil. Bir de veri 2 saat bayattı, çünkü toplayıcı elle çalışıyordu. Şimdi "Şu an" ve "Günlük ort." ayrı kutular, ayrıca "Veri güncelleme: 15:19 (az önce)" yazıyor, 3 saatten eskiyse uyarı çıkıyor.
+
+**S: Bu bir "hava durumu uygulaması" mı?**
+C: Hayır, bir anomali haritası: bugünün günlük ortalama sıcaklığının 1991-2020 normalinden sapmasını gösteriyor. Anlık durumu yardımcı bilgi olarak ekledim ama proje fikri değişmedi; etiketler bunu açıkça söylüyor.
+
+**S: Kaynağın zamanını nasıl doğru yorumladın?**
+C: Open-Meteo `current.time` değerini şehrin yerel saatiyle ofsetsiz veriyor. Yanıttaki `utc_offset_seconds` ile mutlak ana çeviriyorum ve bunu testle koruyorum (15:00 yerel = 12:00 UTC). Ofset olmazsa ölçüm 3 saat kayık görünürdü.
+
+**S: Eski veride "şu an" yoksa ne olur?**
+C: `current` null döner, arayüz "Anlık durum henüz çekilmedi" der ve günlük tahmin yine gösterilir. Kaynakta `current` yoksa toplayıcı bunu hata saymaz.
+
+**S: Bu hatayı neden önceden fark etmedin?**
+C: Sahte yanıtlarla yazdığım testler kodun tutarlılığını doğruluyordu ama "veri kullanıcıya ne anlatıyor" sorusunu sormuyordu. Bunu bir kullanıcı geri bildirimi yakaladı: veriyi gerçek dünyayla karşılaştırmak (arkadaşa sormak, başka bir kaynağa bakmak) ayrı bir doğrulama türü.
+
 ## Aşama 6c: deprem kümeleri
 
 **S: İç içe giren depremleri nasıl çözdün?**

@@ -9,6 +9,12 @@ public interface IWeatherStore
         City city, IReadOnlyList<DailyForecast> forecasts, DateTimeOffset fetchedAt, CancellationToken cancellationToken = default);
 }
 
+/// <summary>Şu anki durumu saklayan taraf (şehir başına tek satır; her çekişte üzerine yazılır).</summary>
+public interface ICurrentWeatherStore
+{
+    Task UpsertCurrentAsync(City city, CurrentObservation current, DateTimeOffset fetchedAt, CancellationToken cancellationToken = default);
+}
+
 /// <summary>Depremleri saklayan taraf. Aynı kimlikli deprem ikinci kez eklenmez, değişmişse güncellenir.</summary>
 public interface IEarthquakeStore
 {

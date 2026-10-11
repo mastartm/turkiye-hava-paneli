@@ -29,7 +29,7 @@ public class OpenMeteoWeatherProviderTests
     {
         var (provider, _) = Create();
 
-        var result = await provider.GetForecastAsync(Ankara, 2);
+        var result = (await provider.GetSnapshotAsync(Ankara, 2)).Days;
 
         Assert.Equal(2, result.Count);
         Assert.Equal(new DateOnly(2026, 10, 10), result[0].Date);
@@ -42,7 +42,7 @@ public class OpenMeteoWeatherProviderTests
     {
         var (provider, _) = Create();
 
-        var result = await provider.GetForecastAsync(Ankara, 2);
+        var result = (await provider.GetSnapshotAsync(Ankara, 2)).Days;
 
         Assert.Null(result[1].MinTemperatureC);
     }
@@ -55,7 +55,7 @@ public class OpenMeteoWeatherProviderTests
         try
         {
             var (provider, handler) = Create();
-            await provider.GetForecastAsync(Ankara, 2);
+            await provider.GetSnapshotAsync(Ankara, 2);
 
             Assert.Contains("latitude=39.93", handler.LastRequest!.Query);
             Assert.Contains("longitude=32.86", handler.LastRequest.Query);
@@ -70,7 +70,7 @@ public class OpenMeteoWeatherProviderTests
     {
         var (provider, _) = Create();
 
-        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => provider.GetForecastAsync(Ankara, days));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => provider.GetSnapshotAsync(Ankara, days));
     }
 
     [Fact]
@@ -78,7 +78,7 @@ public class OpenMeteoWeatherProviderTests
     {
         var (provider, _) = Create("{}", HttpStatusCode.TooManyRequests);
 
-        await Assert.ThrowsAsync<HttpRequestException>(() => provider.GetForecastAsync(Ankara, 2));
+        await Assert.ThrowsAsync<HttpRequestException>(() => provider.GetSnapshotAsync(Ankara, 2));
     }
 
     [Fact]
@@ -86,6 +86,6 @@ public class OpenMeteoWeatherProviderTests
     {
         var (provider, _) = Create("""{"foo":1}""");
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => provider.GetForecastAsync(Ankara, 2));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => provider.GetSnapshotAsync(Ankara, 2));
     }
 }

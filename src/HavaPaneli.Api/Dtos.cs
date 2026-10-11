@@ -25,7 +25,16 @@ public sealed record DayDto(
         new(d.Date, Round.C(d.MinC), Round.C(d.MaxC), Round.C(d.MeanC), Round.C(d.PrecipitationMm), d.WeatherCode, Round.C(d.NormalC), Round.C(d.AnomalyC));
 }
 
-public sealed record CityForecastDto(CityDto City, IReadOnlyList<DayDto> Days);
+/// <param name="ObservedAt">Kaynağın ölçüm/model zamanı (Open-Meteo, ~15 dk'da bir).</param>
+public sealed record CurrentDto(DateTimeOffset ObservedAt, double? TemperatureC, int? WeatherCode, double? PrecipitationMm)
+{
+    public static CurrentDto From(CurrentObservation c) =>
+        new(c.ObservedAt, Round.C(c.TemperatureC), c.WeatherCode, Round.C(c.PrecipitationMm));
+}
+
+/// <param name="Current">Şu anki durum; hiç çekilmediyse null.</param>
+/// <param name="UpdatedAt">Verinin bizim tarafımızdan en son çekildiği an: arayüz "veri ne kadar eski" gösterir.</param>
+public sealed record CityForecastDto(CityDto City, IReadOnlyList<DayDto> Days, CurrentDto? Current, DateTimeOffset? UpdatedAt);
 
 public sealed record MapPointDto(
     CityDto City, double? MinC, double? MaxC, double? MeanC, int? WeatherCode, double? NormalC, double? AnomalyC);

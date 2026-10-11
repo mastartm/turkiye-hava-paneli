@@ -209,6 +209,25 @@ Her karar: **ne**, **neden**, **reddedilen alternatif**. Aşamalar ilerledikçe 
 - **Doğrulama (2026-10-11, gerçek veri, tarayıcıda, 1400x900 ve 390x850 emüle):** Masaüstünde 9 depremin 9'unda kart çıktı, hepsi kabın içinde, hepsinde kılavuz çizgisi karta bağlı ve dairenin kenarından başlıyor. Feke/Saimbeyli depremleri "Adana" olarak bulundu; Girit açığındakiler "Türkiye sınırları dışı". İç içe: Feke kümesinde 6, Fry kümesinde 3 deprem listelendi. Telefonda kart çıkmadı, taşma yok, dokunmayla yan panel açıldı.
 - **Doğrulanamayan:** Ekran görüntüsü alınamadığı için kartın/çizginin **görsel güzelliğini** (renk, gölge, çizginin görünümü) gözle doğrulamadım; sayısal yerleşim doğrulandı. Sağ kenara yakın bir deprem (kartın sola dönmesi) bu veride yok; yalnızca birim testle doğrulandı.
 
+## K-031: "Şu an" ile "günlük ortalama" ayrımı, veri tazeliği, doğru hava kodu etiketleri (kullanıcı gözleminden)
+_(Numara eklenme sırasını gösterir; bu bölüm K-028'den önce durur.)_
+- **Sorun (kullanıcı bulgusu):** Panelde Şanlıurfa için "Sağanak" ve "Bugün 22,2°" yazıyordu; arkadaşı "güneşli" diyor, termometre 27-28° gösteriyordu. İkisi de **bizim etiketleme hatamızdı**:
+  1. Open-Meteo'nun günlük `weather_code` değeri günün **en kötü saatinin** kodudur. Gerçek veride yalnızca 11:00'de 0,2 mm'lik kısa bir sağanak vardı (toplam 0,4 mm); şu an kod 2/3 (parçalı bulutlu/kapalı). Tüm gün "Sağanak" gösteriliyordu. Ayrıca 80/81/82 kodlarının hepsi aynı "Sağanak" etiketiyle gösteriliyordu.
+  2. "Bugün 22,2°" **günlük ortalamaydı** (gece serinliği dahil); şu an 28,3° idi.
+  3. Veri **2 saat bayattı**: toplayıcı elle çalıştırılıyordu (13:03), Open-Meteo `current` ise 15 dakikada bir güncellenir.
+- **Karar (proje fikri değişmedi):** Ana fikir **anomali haritası** kalır (günlük ortalamanın 1991-2020 normalinden sapması), bu uygulama bir "anlık hava durumu" uygulaması değildir. Etiketler bunu açıkça söylemeli.
+- **Yapılanlar:**
+  - `current=temperature_2m,weather_code,precipitation` aynı istekte çekilir (ek istek yok); yeni `current_weather` tablosu (şehir başına tek satır, her çekişte üzerine yazılır) ve çekilme zamanı (`FetchedAt`).
+  - API `forecast` ucu `current` ve `updatedAt` döner. Eski veride `current` yoksa `null`: arayüz "Anlık durum henüz çekilmedi" der, çökmez.
+  - Panel: **"Şu an"** ve **"Günlük ort."** ayrı kutular; "Veri güncelleme: 15:19 (az önce)"; 3 saatten eski veride "eski olabilir" uyarısı; sapmanın günlük ortalamaya göre olduğu yazılı.
+  - Hava kodu etiketleri: her WMO kodu kendi adını taşır (hafif sağanak / sağanak / şiddetli sağanak ayrı). Yağış kodu olup günlük toplam 1 mm'nin altındaysa "Gün içinde kısa süreli hafif sağanak (0,4 mm)": tüm gün yağışlıymış gibi gösterilmez.
+- **`current.time` ofseti:** Open-Meteo `time` değerini şehrin yerel saatiyle ofsetsiz verir ("2026-10-11T15:00"); yanıttaki `utc_offset_seconds` ile mutlak ana çevrilir (testle korunur: 15:00 yerel = 12:00 UTC). Ayrıştırılamayan zaman ya da eksik `current` günlük tahmini engellemez (null).
+- **Saat yönetimi:** "Şimdi" bileşende `useState` + dakikada bir güncelleme; render sırasında `Date.now()` çağrısı bileşeni saf olmaktan çıkarırdı (lint de uyardı). Panel açık kaldıkça "2 saat önce" yazısı ilerler.
+- **Yeni geliştirme kolaylığı:** Vite vekili `API_PROXY` ortam değişkeniyle ayarlanır (varsayılan 5099).
+- **Henüz yapılmayan:** Veri hâlâ elle çalıştırılan toplayıcıyla yenileniyor; **otomatik saatlik toplama canlıya alma aşamasında (GitHub Actions) kurulacak.** Haritanın renkleri günlük ortalamaya göre kalır, "şu an" sıcaklığına göre değil.
+- **Doğrulama (2026-10-11, gerçek veri):** Geçici veritabanı + yeni API + tarayıcı. API'nin Şanlıurfa değerleri Open-Meteo'nun aynı andaki cevabıyla birebir: şu an 28,3° kod 3, günlük kod 80, yağış 0,4 mm; ölçüm 12:15 UTC = 15:15 Türkiye saati. Arayüzde: "Bugün: Gün içinde kısa süreli hafif sağanak (0,4 mm)", "Şu an 28,3° / Günlük ort. 22,3°", "Veri güncelleme: 15:19 (az önce)". Ankara ve Girne (KKTC) panelleri de doğru.
+- **Doğrulanamayan:** "Eski olabilir" uyarısı (3 saatten eski veri) tarayıcıda gerçek bayat veriyle görülmedi, yalnızca birim testle kanıtlı. `Api.Tests` (21 test) bu değişikliklerden sonra çalıştırılamadı: kullanıcının çalışan API'si DLL'leri kilitliyordu (API kodu derlendi, DTO değişikliği küçük). Ekran görüntüsü alınamadığı için panelin görsel düzeni (4 kutu, yeni satırlar) gözle doğrulanmadı.
+
 ## K-028: Deprem kümeleri: iç içe depremler tek işaret, tıklayınca etrafa yayılır ("spiderfy")
 - **Sorun (kullanıcı gözlemi):** Feke bölgesinde 6 deprem dairesi birbirinin içine girmiş, hangisi hangisi belli değildi, alttakilere tıklanamıyordu. Hover kartında "iç içe" listesi yetersizdi (K-027).
 - **Çözüm:** İç içe giren daireler tek bir **küme işaretinde** (magenta, içinde deprem sayısı) toplanır. Kümeye tıklayınca üyeler küme merkezinin etrafında halka(lar) üzerine **yayılır**; her üyeden depremin **gerçek konumuna** ince bir çizgi ve küçük bir nokta çizilir. Yayılmışken her daireye gelince kart, tıklayınca yan panel çalışır.

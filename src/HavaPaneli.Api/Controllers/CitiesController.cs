@@ -20,6 +20,10 @@ public sealed class CitiesController(ForecastQueryService forecasts, IReadOnlyLi
         if (view is null)
             return NotFound(new ProblemDetails { Title = "Şehir bulunamadı", Detail = $"'{id}' kimliğinde bir şehir yok.", Status = 404 });
 
-        return Ok(new CityForecastDto(CityDto.From(view.City), view.Days.Select(DayDto.From).ToList()));
+        return Ok(new CityForecastDto(
+            CityDto.From(view.City),
+            view.Days.Select(DayDto.From).ToList(),
+            view.Current is null ? null : CurrentDto.From(view.Current.Observation),
+            view.Current?.FetchedAt));
     }
 }

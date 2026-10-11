@@ -9,5 +9,5 @@ namespace HavaPaneli.Application;
 public interface IWeatherProvider
 {
     /// <param name="days">1 ile 16 arası; Open-Meteo'nun ücretsiz tahmin sınırı.</param>
-    Task<IReadOnlyList<DailyForecast>> GetForecastAsync(City city, int days, CancellationToken cancellationToken = default);
+    Task<WeatherSnapshot> GetSnapshotAsync(City city, int days, CancellationToken cancellationToken = default);
 }

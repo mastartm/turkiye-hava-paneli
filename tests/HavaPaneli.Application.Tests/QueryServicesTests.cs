@@ -30,6 +30,10 @@ public class QueryServicesTests
                 data.Where(x => x.City == cityName && x.F.Date >= from).Select(x => x.F).ToList());
         }
 
+        public StoredCurrent? Current { get; set; }
+
+        public Task<StoredCurrent?> GetCurrentAsync(string cityName, CancellationToken ct = default) => Task.FromResult(Current);
+
         public Task<IReadOnlyDictionary<string, DailyForecast>> GetForDateAsync(DateOnly date, CancellationToken ct = default) =>
             Task.FromResult<IReadOnlyDictionary<string, DailyForecast>>(
                 data.Where(x => x.F.Date == date).ToDictionary(x => x.City, x => x.F));
@@ -149,6 +153,29 @@ public class QueryServicesTests
         await svc.GetCityForecastAsync("ankara");
 
         Assert.Equal(new DateOnly(2026, 10, 11), reader.LastFrom);
+    }
+
+    [Fact]
+    public async Task Sehir_Tahmini_Su_Anki_Durumu_Ve_Veri_Zamanini_Tasir()
+    {
+        var current = new StoredCurrent(new CurrentObservation(Now, 28.4, 2, 0), Now.AddHours(-2));
+        var reader = new FakeForecasts([("Ankara", Day(Today, 12))]) { Current = current };
+        var svc = new ForecastQueryService([Ankara], reader, new FakeNormals([]), new FixedTime(Now));
+
+        var view = await svc.GetCityForecastAsync("ankara");
+
+        Assert.Equal(28.4, view!.Current!.Observation.TemperatureC);
+        Assert.Equal(Now.AddHours(-2), view.Current.FetchedAt);
+        Assert.Equal(12, view.Days[0].MeanC); // günlük ortalama ayrı bir değer olarak kalır
+    }
+
+    [Fact]
+    public async Task Su_Anki_Durum_Hic_Cekilmediyse_Current_Null_Ama_Tahmin_Doner()
+    {
+        var view = await Create([("Ankara", Day(Today, 12))], []).GetCityForecastAsync("ankara");
+
+        Assert.Null(view!.Current);
+        Assert.Single(view.Days);
     }
 
     // ---- Harita özeti ----

@@ -68,6 +68,31 @@ namespace HavaPaneli.Infrastructure.Persistence.Migrations
                     b.ToTable("climate_normals", (string)null);
                 });
 
+            modelBuilder.Entity("HavaPaneli.Infrastructure.Persistence.CurrentWeatherRow", b =>
+                {
+                    b.Property<int>("CityId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("FetchedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("ObservedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<double?>("PrecipitationMm")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("TemperatureC")
+                        .HasColumnType("double precision");
+
+                    b.Property<int?>("WeatherCode")
+                        .HasColumnType("integer");
+
+                    b.HasKey("CityId");
+
+                    b.ToTable("current_weather", (string)null);
+                });
+
             modelBuilder.Entity("HavaPaneli.Infrastructure.Persistence.EarthquakeRow", b =>
                 {
                     b.Property<string>("Id")
@@ -133,6 +158,15 @@ namespace HavaPaneli.Infrastructure.Persistence.Migrations
                 });
 
             modelBuilder.Entity("HavaPaneli.Infrastructure.Persistence.ClimateNormalRow", b =>
+                {
+                    b.HasOne("HavaPaneli.Infrastructure.Persistence.CityRow", null)
+                        .WithMany()
+                        .HasForeignKey("CityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("HavaPaneli.Infrastructure.Persistence.CurrentWeatherRow", b =>
                 {
                     b.HasOne("HavaPaneli.Infrastructure.Persistence.CityRow", null)
                         .WithMany()

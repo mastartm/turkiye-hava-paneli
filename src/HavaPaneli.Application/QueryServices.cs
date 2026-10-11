@@ -10,7 +10,13 @@ public interface IForecastReader
 
     /// <summary>Verilen gün için her şehrin tahmini (anahtar: şehir adı). Verisi olmayan şehir sözlükte yoktur.</summary>
     Task<IReadOnlyDictionary<string, DailyForecast>> GetForDateAsync(DateOnly date, CancellationToken cancellationToken = default);
+
+    /// <returns>Şehrin saklı "şu an" durumu; hiç çekilmediyse null.</returns>
+    Task<StoredCurrent?> GetCurrentAsync(string cityName, CancellationToken cancellationToken = default);
 }
+
+/// <param name="FetchedAt">Verinin bizim tarafımızdan çekildiği an: "veri ne kadar eski" bilgisi için.</param>
+public sealed record StoredCurrent(CurrentObservation Observation, DateTimeOffset FetchedAt);
 
 public interface IEarthquakeReader
 {
@@ -24,7 +30,7 @@ public sealed record DayView(
     DateOnly Date, double? MinC, double? MaxC, double? MeanC, double? PrecipitationMm, int? WeatherCode,
     double? NormalC, double? AnomalyC);
 
-public sealed record CityForecastView(City City, IReadOnlyList<DayView> Days);
+public sealed record CityForecastView(City City, IReadOnlyList<DayView> Days, StoredCurrent? Current = null);
 
 public sealed record MapPoint(
     City City, double? MinC, double? MaxC, double? MeanC, int? WeatherCode, double? NormalC, double? AnomalyC);
@@ -81,7 +87,8 @@ public sealed class ForecastQueryService
             .OrderBy(f => f.Date)
             .Select(f => ToDayView(f, normal))
             .ToList();
-        return new CityForecastView(city, days);
+        var current = await _forecasts.GetCurrentAsync(city.Name, ct);
+        return new CityForecastView(city, days, current);
     }
 
     /// <summary>Haritadaki tüm şehirlerin bugünkü özeti. Verisi olmayan şehir de listede yer alır (boş değerlerle).</summary>

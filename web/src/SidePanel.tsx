@@ -1,9 +1,10 @@
+import { useEffect, useState } from 'react'
 import { colorFor, formatAnomaly, formatC } from './anomaly'
 import { fetchForecast } from './api'
 import { formatDepth, formatMagnitude, formatWhen } from './earthquakes'
 import { KKTC_REGION_ID, type DayDto, type EarthquakeDto, type MapPointDto } from './types'
 import { useApi } from './useApi'
-import { shortDay, weatherLabel } from './weather'
+import { dailySummary, formatAge, formatClock, isStale, shortDay, weatherLabel } from './weather'
 
 export interface Selection {
   /** Haritada vurgulanan bölge: il kimliği ya da 'kktc'. */
@@ -92,22 +93,49 @@ export function SidePanel({ selection, points, onSelectCity, onBackToRegion, qua
 
 function Forecast({ cityId }: { cityId: string }) {
   const { data, error, loading } = useApi((signal) => fetchForecast(cityId, signal), cityId)
+  // "Şimdi" durumda tutulur ve dakikada bir güncellenir: panel açık kaldıkça "2 saat önce" yazısı da ilerler.
+  // (Render sırasında Date.now() çağırmak bileşeni saf olmaktan çıkarırdı.)
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60_000)
+    return () => clearInterval(id)
+  }, [])
 
   if (loading) return <p className="muted" role="status">Yükleniyor…</p>
   if (error) return <p className="error" role="alert">{error}</p>
   if (!data) return null
 
   const today = data.days[0] ?? null
+  const cur = data.current
+  const stale = data.updatedAt !== null && isStale(data.updatedAt, now)
   return (
     <>
       <h2>{data.city.name}</h2>
-      <p className="muted">{data.city.country === 'Kktc' ? 'KKTC' : 'Türkiye'} · {today ? weatherLabel(today.weatherCode) : 'Veri yok'}</p>
+      <p className="muted">
+        {data.city.country === 'Kktc' ? 'KKTC' : 'Türkiye'} · Bugün: {today ? dailySummary(today.weatherCode, today.precipitationMm) : 'Veri yok'}
+      </p>
 
+      {/* "Şu an" ile "Günlük ort." aynı şey değildir: günlük ortalama gecenin serinliğini de içerir. */}
       <div className="tiles">
-        <Tile label="Bugün" value={formatC(today?.meanC ?? null)} />
+        <Tile label="Şu an" value={formatC(cur?.temperatureC ?? null)} />
+        <Tile label="Günlük ort." value={formatC(today?.meanC ?? null)} />
         <Tile label="Normal" value={formatC(today?.normalC ?? null)} />
         <Tile label="Sapma" value={formatAnomaly(today?.anomalyC ?? null)} color={colorFor(today?.anomalyC ?? null)} />
       </div>
+      <p className="muted tile-note">Sapma ve renk, günlük ortalamanın 1991-2020 normalinden farkıdır.</p>
+
+      {cur ? (
+        <p className="now-line">
+          Şu an: {weatherLabel(cur.weatherCode)} · ölçüm {formatClock(cur.observedAt)}
+        </p>
+      ) : (
+        <p className="muted">Anlık durum henüz çekilmedi.</p>
+      )}
+      {data.updatedAt && (
+        <p className={`freshness${stale ? ' stale' : ''}`}>
+          Veri güncelleme: {formatClock(data.updatedAt)} ({formatAge(data.updatedAt, now)}){stale && ' · eski olabilir'}
+        </p>
+      )}
 
       {data.days.length === 0 ? (
         <p className="muted">Bu şehir için henüz tahmin verisi yok.</p>

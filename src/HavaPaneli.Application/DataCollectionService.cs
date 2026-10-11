@@ -30,6 +30,7 @@ public sealed class DataCollectionService
     private readonly IWeatherProvider _weather;
     private readonly IEarthquakeProvider _earthquakes;
     private readonly IWeatherStore _weatherStore;
+    private readonly ICurrentWeatherStore _currentStore;
     private readonly IEarthquakeStore _earthquakeStore;
     private readonly TimeProvider _time;
     private readonly TimeSpan _delayBetweenCities;
@@ -39,6 +40,7 @@ public sealed class DataCollectionService
         IWeatherProvider weather,
         IEarthquakeProvider earthquakes,
         IWeatherStore weatherStore,
+        ICurrentWeatherStore currentStore,
         IEarthquakeStore earthquakeStore,
         TimeProvider time,
         TimeSpan delayBetweenCities)
@@ -47,6 +49,7 @@ public sealed class DataCollectionService
         _weather = weather;
         _earthquakes = earthquakes;
         _weatherStore = weatherStore;
+        _currentStore = currentStore;
         _earthquakeStore = earthquakeStore;
         _time = time;
         _delayBetweenCities = delayBetweenCities;
@@ -63,8 +66,11 @@ public sealed class DataCollectionService
             cancellationToken.ThrowIfCancellationRequested();
             try
             {
-                var forecasts = await _weather.GetForecastAsync(city, ForecastDays, cancellationToken);
-                await _weatherStore.UpsertForecastsAsync(city, forecasts, now, cancellationToken);
+                var snapshot = await _weather.GetSnapshotAsync(city, ForecastDays, cancellationToken);
+                await _weatherStore.UpsertForecastsAsync(city, snapshot.Days, now, cancellationToken);
+                // Şu anki durum kaynakta yoksa (null) eski kayıt silinmez ve hata sayılmaz: günlük tahmin yine de saklandı.
+                if (snapshot.Current is not null)
+                    await _currentStore.UpsertCurrentAsync(city, snapshot.Current, now, cancellationToken);
                 succeeded++;
             }
             // İptal istisnasını yutmamak için filtre: sadece gerçek hataları kaydedip devam ederiz.

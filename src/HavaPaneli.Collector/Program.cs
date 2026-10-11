@@ -123,6 +123,7 @@ var service = new DataCollectionService(
     new OpenMeteoWeatherProvider(weatherHttp),
     new UsgsEarthquakeProvider(quakeHttp),
     new EfWeatherStore(dbFactory),
+    new EfCurrentWeatherStore(dbFactory),
     new EfEarthquakeStore(dbFactory),
     TimeProvider.System,
     delayBetweenCities: TimeSpan.FromMilliseconds(250));
