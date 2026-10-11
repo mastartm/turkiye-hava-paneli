@@ -1,5 +1,6 @@
 using HavaPaneli.Application;
 using HavaPaneli.Domain;
+using HavaPaneli.Infrastructure;
 using HavaPaneli.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,6 +10,9 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("Default");
 if (string.IsNullOrWhiteSpace(connectionString))
     throw new InvalidOperationException("'ConnectionStrings__Default' ortam değişkeni (veya ConnectionStrings:Default ayarı) tanımlı değil.");
+
+// URI biçimi ("postgresql://...") olduğu gibi yapıştırılabilsin: Npgsql biçimine çevrilir. Hata mesajı parolayı içermez.
+connectionString = ConnectionStringNormalizer.Normalize(connectionString);
 
 builder.Services.AddDbContextFactory<AppDbContext>(o => o.UseNpgsql(connectionString));
 builder.Services.AddSingleton(TimeProvider.System);

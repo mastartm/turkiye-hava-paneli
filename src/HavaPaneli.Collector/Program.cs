@@ -18,6 +18,18 @@ if (string.IsNullOrWhiteSpace(connectionString))
     return 2;
 }
 
+// Barındırma servisleri bağlantıyı "postgresql://kullanici:parola@host/db?sslmode=require" biçiminde verir; olduğu gibi
+// yapıştırılabilsin diye Npgsql biçimine çevrilir (zaten "Host=...;..." biçimindeyse dokunulmaz).
+try
+{
+    connectionString = ConnectionStringNormalizer.Normalize(connectionString);
+}
+catch (FormatException ex)
+{
+    Console.Error.WriteLine($"HATA: {ex.Message}");
+    return 2;
+}
+
 using var cts = new CancellationTokenSource();
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
 
