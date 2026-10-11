@@ -2,7 +2,10 @@ import { geoMercator, geoPath } from 'd3-geo'
 import type { Feature, FeatureCollection, Geometry } from 'geojson'
 import { useMemo, useState } from 'react'
 import { colorFor, formatAnomaly } from './anomaly'
-import { describeQuake, isInView, radiusFor, sortForDrawing } from './earthquakes'
+import { describeQuake, isInView, overlappingWith, radiusFor, sortForDrawing, type PlacedQuake } from './earthquakes'
+import { regionNameAt } from './location'
+import { QuakeCard } from './QuakeCard'
+import { useElementSize } from './useElementSize'
 import type { EarthquakeDto } from './types'
 
 export interface RegionProps {
@@ -35,6 +38,7 @@ const HEIGHT = 440
 export function TurkeyMap({ regions, anomalies, selectedId, onSelect, quakes, selectedQuakeId, onSelectQuake }: Props) {
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [hoveredQuake, setHoveredQuake] = useState<EarthquakeDto | null>(null)
+  const [stageRef, stageSize] = useElementSize<HTMLDivElement>()
 
   // Projeksiyon ve yol hesabı pahalı: yalnızca sınır verisi değişince yeniden hesaplanır.
   const { paths, project } = useMemo(() => {
@@ -54,7 +58,7 @@ export function TurkeyMap({ regions, anomalies, selectedId, onSelect, quakes, se
 
   // Harita çerçevesinin dışına taşan depremler (komşu ülke/açık deniz) çizilmez, sayılır ve altta belirtilir.
   const { drawn, hiddenCount } = useMemo(() => {
-    const placed: { quake: EarthquakeDto; x: number; y: number; r: number }[] = []
+    const placed: PlacedQuake[] = []
     let hidden = 0
     for (const q of sortForDrawing(quakes)) {
       const xy = project(q.longitude, q.latitude)
@@ -65,6 +69,14 @@ export function TurkeyMap({ regions, anomalies, selectedId, onSelect, quakes, se
   }, [quakes, project])
 
   const hovered = paths.find((p) => p.props.id === hoveredId) ?? null
+
+  // Hover kartı: fare altındaki deprem, onunla üst üste binenler ve içinde bulunduğu il.
+  const hoveredPlaced = hoveredQuake ? (drawn.find((d) => d.quake.id === hoveredQuake.id) ?? null) : null
+  const group = useMemo(() => (hoveredPlaced ? overlappingWith(hoveredPlaced, drawn) : []), [hoveredPlaced, drawn])
+  const hoveredRegionName = useMemo(
+    () => (hoveredQuake ? regionNameAt(regions, hoveredQuake.longitude, hoveredQuake.latitude) : null),
+    [hoveredQuake, regions],
+  )
 
   const label = (id: string, name: string) => `${name}, sapma ${formatAnomaly(anomalies.get(id) ?? null)}`
 
@@ -82,6 +94,7 @@ export function TurkeyMap({ regions, anomalies, selectedId, onSelect, quakes, se
         )}
       </p>
 
+      <div className="map-stage" ref={stageRef}>
       <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="group" aria-label="Türkiye ve KKTC haritası">
         <g className="regions">
           {paths.map(({ props, d }) => (
@@ -148,6 +161,16 @@ export function TurkeyMap({ regions, anomalies, selectedId, onSelect, quakes, se
           ))}
         </g>
       </svg>
+
+      {group.length > 0 && (
+        <QuakeCard
+          group={group}
+          regionName={hoveredRegionName}
+          container={stageSize}
+          scale={stageSize.width / WIDTH}
+        />
+      )}
+      </div>
 
       {hiddenCount > 0 && (
         <p className="muted map-note">{hiddenCount} deprem harita çerçevesinin dışında kaldı (komşu bölgeler).</p>

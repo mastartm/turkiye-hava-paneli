@@ -101,3 +101,27 @@ footer { font-size: 0.8rem; padding-bottom: 16px; }
 .quake-facts { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 12px 0; }
 .quake-facts dt { color: var(--muted); }
 .quake-facts dd { margin: 0; }
+
+/* Deprem hover kartı ve kılavuz çizgisi */
+.map-stage { position: relative; }
+.quake-leader { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+.quake-leader line { stroke: var(--text); stroke-width: 1.2; }
+.quake-leader circle { fill: var(--text); }
+
+.quake-card {
+  position: absolute; z-index: 5; pointer-events: none;
+  background: var(--card); color: var(--text);
+  border: 0.5px solid var(--border); border-radius: 10px; padding: 10px 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22); font-size: 0.85rem; line-height: 1.35;
+}
+.qc-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+.qc-head strong { font-size: 1.15rem; font-weight: 600; color: #3c3489; }
+@media (prefers-color-scheme: dark) { .qc-head strong { color: #cecbf6; } }
+.qc-head span { color: var(--muted); font-size: 0.8rem; }
+.quake-card dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 0; }
+.quake-card dt { color: var(--muted); }
+.quake-card dd { margin: 0; }
+.qc-group { margin-top: 8px; padding-top: 6px; border-top: 0.5px solid var(--border); }
+.qc-group p { margin: 0 0 2px; color: var(--muted); }
+.qc-group ul { list-style: none; margin: 0; padding: 0; }
+.qc-group li { line-height: 20px; }

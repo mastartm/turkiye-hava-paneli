@@ -47,3 +47,117 @@ export function formatWhen(isoUtc: string): string {
 export function describeQuake(q: EarthquakeDto): string {
   return `M ${formatMagnitude(q.magnitude)} · ${q.place}`
 }
+
+// ---------------- Hover kartı: iç içe depremler, yerleşim, yer metni ----------------
+
+export interface PlacedQuake {
+  quake: EarthquakeDto
+  /** SVG koordinatı (viewBox birimi). */
+  x: number
+  y: number
+  r: number
+}
+
+/**
+ * Verilen dairenin üst üste bindiği (merkezler arası uzaklık < yarıçaplar toplamı) tüm depremler,
+ * kendisi dahil ve ilk sırada; geri kalanlar büyüklüğe göre büyükten küçüğe.
+ */
+export function overlappingWith(target: PlacedQuake, all: readonly PlacedQuake[]): PlacedQuake[] {
+  const others = all
+    .filter((p) => p.quake.id !== target.quake.id && Math.hypot(p.x - target.x, p.y - target.y) < p.r + target.r)
+    .sort((a, b) => b.quake.magnitude - a.quake.magnitude)
+  return [target, ...others]
+}
+
+/** USGS "21 km ESE of Feke, Turkey" metninin ayrıştırılmış hali; ayrıştırılamazsa null. */
+export interface ParsedPlace {
+  distanceKm: number
+  direction: string
+  settlement: string
+}
+
+export function parsePlace(place: string): ParsedPlace | null {
+  const m = /^(\d+(?:\.\d+)?) km ([NSEW]{1,3}) of (.+)$/.exec(place.trim())
+  return m ? { distanceKm: Number(m[1]), direction: m[2], settlement: m[3] } : null
+}
+
+const YONLER: Record<string, string> = {
+  N: 'kuzey', NNE: 'kuzey-kuzeydoğu', NE: 'kuzeydoğu', ENE: 'doğu-kuzeydoğu',
+  E: 'doğu', ESE: 'doğu-güneydoğu', SE: 'güneydoğu', SSE: 'güney-güneydoğu',
+  S: 'güney', SSW: 'güney-güneybatı', SW: 'güneybatı', WSW: 'batı-güneybatı',
+  W: 'batı', WNW: 'batı-kuzeybatı', NW: 'kuzeybatı', NNW: 'kuzey-kuzeybatı',
+}
+
+/** "ESE" → "doğu-güneydoğu". Bilinmeyen kısaltma olduğu gibi döner (sessizce yanlış çeviri yapmaz). */
+export function directionName(code: string): string {
+  return YONLER[code] ?? code
+}
+
+// ---------------- Kart yerleşimi ----------------
+
+export const CARD_WIDTH = 270
+
+/** İç içe depremler kartta en çok bu kadar satır olarak listelenir; fazlası "+N daha" olur. */
+export const MAX_LISTED = 6
+
+/** Kartın en az yüksekliği (px): sabit satırlar + iç içe deprem listesi (en çok 6 satır görünür). */
+export function cardMinHeight(groupSize: number): number {
+  const base = 176
+  if (groupSize <= 1) return base
+  return base + 30 + Math.min(groupSize, MAX_LISTED) * 20 + (groupSize > MAX_LISTED ? 20 : 0)
+}
+
+export interface CardPlacement {
+  left: number
+  top: number
+  side: 'right' | 'left' | 'below' | 'above'
+  /** Kılavuz çizgisinin karta bağlandığı nokta (px, kabın sol üstüne göre). */
+  anchorX: number
+  anchorY: number
+}
+
+const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), Math.max(lo, hi))
+
+/**
+ * Kartı noktanın yanına koyar: önce sağa, sığmazsa sola, o da olmazsa altına/üstüne (dar ekran).
+ * Kart her zaman kabın içinde kalır. Tüm değerler piksel, kabın sol üst köşesine göre.
+ */
+export function placeCard(
+  point: { x: number; y: number },
+  radius: number,
+  container: { width: number; height: number },
+  card: { width: number; height: number },
+  gap = 20,
+): CardPlacement {
+  const top = clamp(point.y - 24, 0, container.height - card.height)
+  const sideAnchorY = clamp(point.y, top + 10, top + card.height - 10)
+
+  const rightLeft = point.x + radius + gap
+  if (rightLeft + card.width <= container.width) {
+    return { left: rightLeft, top, side: 'right', anchorX: rightLeft, anchorY: sideAnchorY }
+  }
+
+  const leftLeft = point.x - radius - gap - card.width
+  if (leftLeft >= 0) {
+    return { left: leftLeft, top, side: 'left', anchorX: leftLeft + card.width, anchorY: sideAnchorY }
+  }
+
+  // Yana sığmıyor (dar ekran): altına ya da üstüne, yatayda kabın içine kenetlenerek.
+  const left = clamp(point.x - card.width / 2, 0, container.width - card.width)
+  const anchorX = clamp(point.x, left + 10, left + card.width - 10)
+  const belowTop = point.y + radius + gap
+  if (belowTop + card.height <= container.height) {
+    return { left, top: belowTop, side: 'below', anchorX, anchorY: belowTop }
+  }
+  const aboveTop = Math.max(0, point.y - radius - gap - card.height)
+  return { left, top: aboveTop, side: 'above', anchorX, anchorY: aboveTop + card.height }
+}
+
+/**
+ * Kart kabın içine sığabilir mi? Dar ve kısa kaplarda (telefon: harita ~350x160 px) 270x270+ px'lik kart hiçbir
+ * konumda sığmaz ve taşardı; o durumda kart gösterilmez. Dokunmatik ekranda zaten hover yoktur,
+ * dokununca yan panel açılır ve aynı ayrıntıyı verir.
+ */
+export function cardFits(container: { width: number; height: number }, card: { width: number; height: number }): boolean {
+  return container.width >= card.width + 40 && container.height >= card.height
+}
