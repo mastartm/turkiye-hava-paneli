@@ -152,3 +152,12 @@ export function placeCard(
   const aboveTop = Math.max(0, point.y - radius - gap - card.height)
   return { left, top: aboveTop, side: 'above', anchorX, anchorY: aboveTop + card.height }
 }
+
+/**
+ * Kart kabın içine sığabilir mi? Dar ve kısa kaplarda (telefon: harita ~350x160 px) 270x270+ px'lik kart hiçbir
+ * konumda sığmaz ve taşardı; o durumda kart gösterilmez. Dokunmatik ekranda zaten hover yoktur,
+ * dokununca yan panel açılır ve aynı ayrıntıyı verir.
+ */
+export function cardFits(container: { width: number; height: number }, card: { width: number; height: number }): boolean {
+  return container.width >= card.width + 40 && container.height >= card.height
+}

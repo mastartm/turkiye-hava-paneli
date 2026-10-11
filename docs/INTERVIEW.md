@@ -232,3 +232,20 @@ C: "Son 30 gün" seçeneği yalnızca 7 günlük veri döndürüyordu, çünkü 
 
 **S: Neden depremler İngilizce yer adıyla?**
 C: USGS metni olduğu gibi geliyor ("21 km ESE of Feke, Turkey"). Çevirmek bozuk çıktı riski taşırdı; ham veriyi göstermek ve kaynağı belirtmek daha dürüst.
+
+## Aşama 6b: deprem hover kartı
+
+**S: Depremin ilçesini neden göstermedin?**
+C: İlçe sınır verim yok; elimdeki kaynak yalnızca il sınırı veriyor. İlçeyi tahmin etmek yerine USGS'nin yer metninden "en yakın yerleşim" bilgisini gösterdim ve adını "ilçe" değil "en yakın yerleşim" koydum ki yanlış bilgi izlenimi vermesin. İlçe sınırı verisi bulunursa aynı il bulma mantığı ilçeye genişletilebilir.
+
+**S: Bir depremin hangi ilde olduğunu nasıl buldun?**
+C: Haritada zaten il çokgenleri var; deprem koordinatının hangi çokgenin içinde olduğuna düz bir nokta-çokgen testiyle bakıyorum. d3-geo'nun küresel kontrolünü kullanmadım, çünkü çokgenin yön sırası yanlışsa tüm dünyayı içeride sayabiliyor.
+
+**S: İç içe daireleri nasıl çözdün?**
+C: İki dairenin merkezleri arası uzaklık yarıçaplar toplamından küçükse üst üste biniyor sayıyorum. Hover kartı fare altındaki depremle birlikte bindiği diğerlerini de listeliyor, böylece alttaki gizli kalmıyor.
+
+**S: Gerçek denemede ne yakaladın?**
+C: Telefon genişliğinde harita 350x160 piksel, kart ise 270x270+ piksel olduğu için kart kabın dışına taşıyordu. Sığmayan kapta kartı hiç göstermeyen bir kural ekledim; dokunmatikte zaten hover yok, dokununca yan panel açılıyor. Bir de kap boyutunu sadece ResizeObserver'la öğrenirsem gizli sekmede boyut sıfır kalıp kart hiç çıkmıyordu; ilk boyutu doğrudan ölçmeye başladım.
+
+**S: Kart fareyi neden engellemiyor?**
+C: `pointer-events: none`. Kart faredeki daireyi örtüp hover'ı bozarsa titreme olur; kart yalnızca bilgi gösteriyor, etkileşimli değil.

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   CARD_WIDTH,
   MAX_LISTED,
+  cardFits,
   cardMinHeight,
   directionName,
   overlappingWith,
@@ -163,5 +164,26 @@ describe('regionNameAt (planar nokta-çokgen)', () => {
 
   it('nokta/çizgi geometrisi bölge sayılmaz', () => {
     expect(inGeometry(0, 0, { type: 'Point', coordinates: [0, 0] })).toBe(false)
+  })
+})
+
+describe('cardFits', () => {
+  const card = { width: CARD_WIDTH, height: 266 }
+
+  it('geniş masaüstü kabına sığar', () => {
+    expect(cardFits({ width: 1002, height: 459 }, card)).toBe(true)
+  })
+
+  it('telefon genişliğindeki küçük kabı (348x160) reddeder: kart taşardı', () => {
+    expect(cardFits({ width: 348, height: 160 }, card)).toBe(false)
+  })
+
+  it('yeterince geniş ama kısa kapta da reddeder', () => {
+    expect(cardFits({ width: 1000, height: 200 }, card)).toBe(false)
+  })
+
+  it('kart tam sığıyorsa kabul eder (yatayda 40 px pay ile)', () => {
+    expect(cardFits({ width: CARD_WIDTH + 40, height: 266 }, card)).toBe(true)
+    expect(cardFits({ width: CARD_WIDTH + 39, height: 266 }, card)).toBe(false)
   })
 })
