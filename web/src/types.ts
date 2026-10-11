@@ -50,3 +50,15 @@ export interface SourceDto {
 
 /** Haritadaki bölge kimliği: 81 il + 'kktc' (6 ilçe tek bölge olarak çizilir). */
 export const KKTC_REGION_ID = 'kktc'
+
+export interface EarthquakeDto {
+  id: string
+  /** ISO 8601, UTC ofsetli ("2026-10-06T23:50:36.679+00:00"). */
+  occurredAt: string
+  magnitude: number
+  /** USGS'nin İngilizce yer metni ("27 km WSW of Fry, Greece"); çevrilmeden gösterilir. */
+  place: string
+  latitude: number
+  longitude: number
+  depthKm: number | null
+}
