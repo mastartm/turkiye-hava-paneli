@@ -249,3 +249,23 @@ C: Telefon genişliğinde harita 350x160 piksel, kart ise 270x270+ piksel olduğ
 
 **S: Kart fareyi neden engellemiyor?**
 C: `pointer-events: none`. Kart faredeki daireyi örtüp hover'ı bozarsa titreme olur; kart yalnızca bilgi gösteriyor, etkileşimli değil.
+
+## Aşama 6c: deprem kümeleri
+
+**S: İç içe giren depremleri nasıl çözdün?**
+C: Üst üste binen daireleri bir küme işaretinde topladım (magenta, içinde sayı). Tıklayınca üyeler merkezin etrafına halka halinde yayılıyor ve her biri kendi gerçek konumuna çizgiyle bağlanıyor. Haritalarda bu desene "spiderfy" deniyor.
+
+**S: Küme sınırını nasıl belirledin?**
+C: Daireleri üst üste binenler kümeleniyor; A-B ve B-C üst üste biniyorsa A-C binmese de üçü aynı küme. Bunu union-find (birleştirme-bulma) ile yapıyorum. Küme kimliğini girdi sırasından bağımsız tuttum.
+
+**S: Yayılmada dairelerin birbirine girmemesini nasıl sağladın?**
+C: Halka kapasitesini komşular arası kiriş uzunluğundan hesapladım. İlk aklıma gelen yay uzunluğuydu, ama az üyede yay kirişten uzun olduğu için daireler değerdi. Üye çoksa dış halkalar ekleniyor. Testle 2'den 40 üyeye kadar hiçbirinin üst üste binmediğini doğruluyorum.
+
+**S: Küme haritanın kenarındaysa?**
+C: Önce yayılmayı döndürüyorum ki hepsi çerçevede kalsın. Köşede tam halka hiçbir açıda sığmıyor; bunu testi yazarken fark ettim, ilk sürüm sadece dönüyordu ve köşe testi başarısız oldu. Bu yüzden son çare olarak tüm yayılmayı çerçevenin içine kaydırıyorum. Çizgiler yine her üyeyi kendi gerçek konumuna bağlıyor.
+
+**S: Kümeyi nasıl kapatıyorsun?**
+C: Dört yol: merkezdeki halkaya tıklamak, Esc, başka bir kümeyi açmak ve deprem ayarlarını değiştirmek.
+
+**S: Neden "ölü kod" sildin?**
+C: Hover kartındaki "iç içe" listesi kümelemenin yerini aldı ve kullanılmaz oldu. Kullanılmayan fonksiyonu ve testlerini tuttum mu, ileride kafa karıştırırdı.

@@ -125,3 +125,15 @@ footer { font-size: 0.8rem; padding-bottom: 16px; }
 .qc-group p { margin: 0 0 2px; color: var(--muted); }
 .qc-group ul { list-style: none; margin: 0; padding: 0; }
 .qc-group li { line-height: 20px; }
+
+/* Deprem kümeleri: magenta işaret + yayılma */
+.cluster { fill: #c2185b; fill-opacity: 0.9; stroke: #ffffff; stroke-width: 2; cursor: pointer; outline: none; }
+.cluster:hover, .cluster:focus-visible { fill-opacity: 1; stroke-width: 3; }
+.cluster.open { fill-opacity: 0.12; stroke: #c2185b; stroke-width: 2; stroke-dasharray: 4 3; }
+.cluster-count { fill: #ffffff; font-size: 12px; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
+.fan-lines line { stroke: var(--text); stroke-width: 1; opacity: 0.7; }
+.fan-lines circle { fill: var(--text); }
+.swatch-cluster { background: #c2185b; border-radius: 50%; }
+.cluster-card .qc-head strong { color: #c2185b; }
+.qc-hint { margin: 8px 0 0; color: var(--muted); font-size: 0.8rem; }
+@media (prefers-color-scheme: dark) { .cluster-card .qc-head strong { color: #f48fb1; } }
