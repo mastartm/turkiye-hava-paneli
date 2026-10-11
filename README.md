@@ -4,6 +4,12 @@
 
 Türkiye'nin 81 ili ve KKTC için **"bugün normalden ne kadar sıcak ya da soğuk?"** sorusunu tek bakışta yanıtlayan, ücretsiz açık veriyle çalışan bir harita paneli. Her bölgenin rengi, bugünkü sıcaklığın **1991-2020 iklim normalinden sapmasını** gösterir. İsteğe bağlı deprem katmanı, son depremleri büyüklüğe göre daire olarak çizer.
 
+**Canlı demo:** https://turkiye-hava-paneli.hava-paneli.workers.dev
+
+(Sunucu ücretsiz planda; boşta uyuduğu için ilk açılış 30-60 saniye sürebilir.)
+
+![Panelin kısa tanıtımı: anomali haritası, il paneli ve deprem katmanı](docs/demo.gif)
+
 > Portföy projesidir, ticari değildir. Veri kaynaklarının kullanım şartları aşağıda.
 
 ## Ne yapar
@@ -134,6 +140,6 @@ Bu projede sahte (mock) testlerle görülemeyen, gerçek çalıştırmada çıka
 
 - **İlçe yok.** Kaynağım yalnızca il sınırı veriyor; KKTC haritada tek bölge, ilçeleri yan panelde listelenir. Deprem kartında "ilçe" yerine USGS'nin "en yakın yerleşim" bilgisi gösterilir.
 - **USGS Türkiye'de küçük depremleri eksik verir**; resmi kayıt için AFAD ve Kandilli'ye bakın.
-- **Canlı demo henüz yok** (kartsız yol planlandı: Neon + Render + Cloudflare Pages).
-- Harita telefonda küçük kalır; telefon düzeni iyileştirilecek. Ekran görüntüsü/GIF henüz eklenmedi.
+- **Ücretsiz barındırma:** API Render'ın ücretsiz planında, veritabanı Neon'da, arayüz Cloudflare'de. Boşta kalınca API uyur, ilk istek yavaş olur.
+- Harita telefonda küçük kalır; telefon düzeni iyileştirilecek.
 - Open-Meteo verisi ticari olmayan kullanım içindir; ticari kullanım için ayrı plan gerekir.
