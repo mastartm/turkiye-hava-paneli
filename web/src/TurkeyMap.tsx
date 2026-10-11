@@ -78,7 +78,7 @@ export function TurkeyMap({ regions, anomalies, selectedId, onSelect, quakes, se
             <strong>{hovered.props.name}</strong> · sapma {formatAnomaly(anomalies.get(hovered.props.id) ?? null)}
           </>
         ) : (
-          'Bir ile gelin ya da tıklayın'
+          'Bir şehrin üzerine gelin ya da tıklayın'
         )}
       </p>
 
