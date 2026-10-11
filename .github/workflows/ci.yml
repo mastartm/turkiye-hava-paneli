@@ -1,0 +1,68 @@
+name: CI
+
+# Her push'ta (main) ve her Pull Request'te çalışır. Üç iş birbirinden bağımsız ve paralel koşar.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Aynı dalda yeni push gelince eski, bitmemiş koşuyu iptal et: boşuna dakika harcanmasın.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  dotnet:
+    name: .NET derleme ve testler
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Proje net8.0 hedefler. Yerelde .NET 10 SDK'sı da kurulu olabilir; burada SDK 8 ile derlemek,
+      # "yalnızca yeni SDK'da derleniyor" sorununu yakalar.
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - run: dotnet restore
+      - run: dotnet build --no-restore -c Release
+
+      # Altyapı ve API testleri gerçek PostgreSQL'i Testcontainers ile Docker'da açar (ubuntu-latest'te Docker hazırdır).
+      - run: dotnet test --no-build -c Release --verbosity normal
+
+  web:
+    name: Arayüz (lint, tür denetimi, testler, derleme)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      # `npm ci`: package-lock.json'a birebir uyar, yoksa hata verir (kimsenin makinesinde "yanlışlıkla farklı sürüm" olmaz).
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      # `build` önce `tsc -b` ile tür denetimi yapar, sonra paketler.
+      - run: npm run build
+
+  docker:
+    name: Docker imajları derleniyor mu
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Yalnızca derlenebilirliği doğrular (çalıştırmaz). Parola yalnızca compose dosyasındaki zorunlu
+      # değişken denetimini geçmek için; CI'a özgü, sahte, hiçbir yere bağlanmaz.
+      - run: docker compose build
+        env:
+          POSTGRES_PASSWORD: ci-only-not-a-secret

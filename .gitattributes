@@ -1,0 +1,7 @@
+# Linux'ta (CI, Docker) çalışan dosyalar Windows'ta CRLF'e çevrilmesin: bozuk betik/ayar riskini kapatır.
+docker/* text eol=lf
+*.Dockerfile text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.sh text eol=lf
+*.mjs text eol=lf

@@ -21,3 +21,8 @@ Durum notları: tamamlanan işler `ARCHITECTURE.md`'de karar olarak, yapılacakl
 
 ## v2 (sonra)
 Hava kalitesi, deniz/dalga, orman yangını; il/ülke bazlı süzme; AFAD (kullanım şartı doğrulanırsa).
+
+## Güncel durum (2026-10-11)
+- **Aşama 5 yapıldı:** Docker Compose ile tek komut, GitHub Actions CI (ilk koşu bekliyor), README (ölçüm tablosu dahil).
+- **Yeni fikir (ölçümden çıktı):** `/api/map` her istekte 87 şehrin normal dizisini veritabanından okuyor (p50 8,6 ms; diğer uçlar 1-3 ms). Normaller değişmediği için bellekte önbelleğe alınabilir (başlangıçta bir kez yükle).
+- **Sırada:** Aşama 6 canlıya alma (Neon + Render + Cloudflare Pages; hesapları kullanıcı açar), geçmişle karşılaştırma grafiği, telefon düzeni, ekran görüntüsü/GIF.

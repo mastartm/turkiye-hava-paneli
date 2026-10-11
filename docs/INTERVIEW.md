@@ -269,3 +269,26 @@ C: Dört yol: merkezdeki halkaya tıklamak, Esc, başka bir kümeyi açmak ve de
 
 **S: Neden "ölü kod" sildin?**
 C: Hover kartındaki "iç içe" listesi kümelemenin yerini aldı ve kullanılmaz oldu. Kullanılmayan fonksiyonu ve testlerini tuttum mu, ileride kafa karıştırırdı.
+
+## Aşama 5: Docker, CI, README
+
+**S: `docker compose up` neden önce `init` servisini çalıştırıyor?**
+C: API şemayı yönetmiyor, toplayıcı yönetiyor. Taze bir veritabanında API açılsa tablolar olmazdı. `init` şemayı kurup hazır normalleri yüklüyor ve çıkıyor; API ancak bu başarıyla bitince başlıyor (`service_completed_successfully`).
+
+**S: Veri toplama başarısız olursa uygulama açılmaz mı?**
+C: Açılır. Normal yükleme dosyadan, internetsiz; başarısız olursa API'yi bilerek açmıyorum, çünkü normalsiz harita anlamsız. Ama veri toplama (internet ister) hata verse bile uygulama açılıyor ve uyarı yazıyor, komut tekrarlanabiliyor.
+
+**S: Parolayı nasıl yönetiyorsun?**
+C: Yalnızca `.env`'de, git'e girmiyor. Compose bağlantı dizesini bu değişkenlerden kuruyor; tanımlı değilse hata veriyor (boş parolayla çalışmasın). `.dockerignore` `.env`'yi imaja bile sokmuyor.
+
+**S: Neden API'ye dışarıdan port açmadın?**
+C: Yalnızca nginx erişsin diye. Tarayıcı tek adrese konuşuyor, nginx `/api`'yi iletiyor: CORS ayarına gerek kalmıyor ve saldırı yüzeyi daralıyor.
+
+**S: Docker denemesinde bir hata yakaladın mı?**
+C: Evet, `/health` yanlış "sağlıklı" dönüyordu: nginx onu bilinmeyen yol sayıp `index.html` (200) veriyordu, API çökse bile. Gerçek API'ye ilettim ve API'yi durdurup açarak 504 ve 200 verdiğini doğruladım.
+
+**S: CI neden .NET 8 SDK'sıyla derliyor?**
+C: Geliştirme makinemde .NET 10 SDK'sı var ama proje net8.0 hedefliyor. CI'da SDK 8 kullanmak "sadece yeni SDK'da derleniyor" sorununu yakalıyor.
+
+**S: Ölçüm tablosuna ne kadar güvenilir?**
+C: Tek makinede, Docker Desktop üzerinde, nginx üzerinden ölçtüm; mutlak değil göreli fikir verir. Eş zamanlı ölçüm kısa (her uç için bir saniyenin altı), yük testi değil, bunu README'de açıkça yazdım. En yavaş uç `/api/map`: her istekte 87 şehrin normalini okuyor; normal değişmediği için önbelleğe alınabilir.
