@@ -47,8 +47,8 @@ export function SidePanel({ selection, points, onSelectCity, onBackToRegion, qua
   if (!selection) {
     return (
       <aside className="panel panel-empty">
-        <h2>Bir il seçin</h2>
-        <p>Haritada bir ile tıklayın; 7 günlük tahmini ve normalden sapmasını burada görün.</p>
+        <h2>Bir şehir seçin</h2>
+        <p>Haritada bir şehre tıklayın; 7 günlük tahmini ve normalden sapmasını burada görün.</p>
       </aside>
     )
   }
