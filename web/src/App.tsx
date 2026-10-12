@@ -62,7 +62,7 @@ export default function App() {
   return (
     <div className="app">
       <header>
-        <h1>Türkiye hava durumu paneli</h1>
+        <h1>Türkiye Hava ve Deprem Paneli</h1>
         <p className="muted">
           Bugün normalden ne kadar sıcak ya da soğuk? Renk, bugünün günlük ortalama sıcaklığının 1991-2020 normalinden sapmasını gösterir.
           {map.data && <> Tarih: {map.data.date}.</>}

@@ -1,4 +1,4 @@
-# Türkiye Hava Durumu ve Deprem Paneli
+# Türkiye Hava ve Deprem Paneli
 
 ![CI](https://github.com/mastartm/turkiye-hava-paneli/actions/workflows/ci.yml/badge.svg)
 
