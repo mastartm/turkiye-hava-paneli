@@ -1,0 +1,37 @@
+name: Veri toplama
+
+# Saatte bir Open-Meteo ve USGS'den veriyi çekip Neon'daki veritabanına yazar (docs/ARCHITECTURE.md K-015).
+# API (Render ücretsiz plan) boşta uyusa bile veri akar: toplayıcı API'den bağımsız, "çalış ve bitir" bir programdır.
+# Elle de başlatılabilir: GitHub > Actions > "Veri toplama" > Run workflow.
+on:
+  schedule:
+    # Her saatin 7. dakikası. GitHub zamanlanmış işleri tam saat başında yoğunlaştırır; :07 daha az gecikir.
+    - cron: "7 * * * *"
+  workflow_dispatch:
+
+# İki koşu üst üste binmesin: eski bitmeden yenisi başlamaz (iptal etmeyiz, yarım yazma olmasın).
+concurrency:
+  group: collect
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  collect:
+    name: Veriyi topla
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      # Çıkış kodları: 0 tamam, 1 kısmi hata (veri yine de yazıldı), 2 yapılandırma hatası. 0 dışı iş "başarısız"
+      # görünür, hata sessizce kaybolmaz. Bağlantı dizesi programda asla yazdırılmaz; GitHub da secret değerini loglarda maskeler.
+      - name: Toplayıcıyı çalıştır
+        run: dotnet run --project src/HavaPaneli.Collector -c Release
+        env:
+          ConnectionStrings__Default: ${{ secrets.NEON_CONNECTION_STRING }}
